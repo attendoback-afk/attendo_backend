@@ -1,0 +1,22 @@
+version: "3.8"
+
+name: attendo_backend
+
+services:
+  db:
+    image: postgres:18
+    container_name: attendo_api
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: mysecretpassword
+      POSTGRES_DB: attendo_db
+    ports:
+      - "5432:5432"
+    # Mount volume to /var/lib/postgresql/data as per Postgres 18+ best practices
+    volumes:
+      - pgdata:/var/lib/postgresql
+
+volumes:
+  pgdata:
+  redisdata:

@@ -1,0 +1,170 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  inviteId     String?  // From ERD (optional)
+  passwordHash String
+  fullName     String
+  email        String   @unique
+  createdAt    DateTime @default(now())
+  invalid      Boolean  @default(true) 
+
+  student      Student?
+  staff        StaffMember?
+}
+
+model EmailVerification {
+  id        String   @id @default(uuid()) // From ERD
+  otp       String
+  email     String   @unique // ERD uses email
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+}
+
+model Role {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+
+  staffMembers StaffMember[]
+}
+
+model Department {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+
+  classes     Class[]
+}
+
+model Class {
+  id           Int        @id @default(autoincrement())
+  name         String
+  classCode    String     @unique
+  departmentId Int
+  year         Int
+  description  String?
+
+  department   Department @relation(fields: [departmentId], references: [id])
+  students     Student[]
+  modules      ClassModule[]
+  sessions     Session[]
+}
+
+model Module {
+  id          Int      @id @default(autoincrement())
+  name        String
+  code        String   @unique
+  description String?
+
+  classes     ClassModule[]
+  sessions    Session[]
+}
+
+model ClassModule {
+  classId  Int
+  moduleId Int
+
+  class    Class  @relation(fields: [classId], references: [id], onDelete: Cascade)
+  module   Module @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  @@id([classId, moduleId])
+}
+
+model Room {
+  id   Int    @id @default(autoincrement())
+  name String
+
+  sessions Session[]
+}
+
+model Session {
+  id        Int      @id @default(autoincrement())
+  classId   Int
+  moduleId  Int
+  roomId    Int
+  dayOfWeek Int      // 0 = Sunday, ..., 6 = Saturday
+  startTime DateTime
+  endTime   DateTime
+
+  class       Class        @relation(fields: [classId], references: [id])
+  module      Module       @relation(fields: [moduleId], references: [id])
+  room        Room         @relation(fields: [roomId], references: [id])
+  attendances Attendance[]
+}
+
+model StaffMember {
+  userId  Int @id 
+  roleId  Int
+
+  user    User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role    Role @relation(fields: [roleId], references: [id])
+
+  markedAttendances Attendance[]
+  liveSessions      AttendanceSession[]
+}
+
+model Student {
+  userId      Int    @id 
+  classId     Int
+  studentCode String @unique
+
+  user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  class       Class  @relation(fields: [classId], references: [id])
+
+  attendances Attendance[]
+  liveAttendanceRecords AttendanceRecord[]
+}
+
+
+
+model Attendance {
+  id        Int      @id @default(autoincrement())
+  studentId Int
+  sessionId Int
+  markedBy  Int 
+  date      DateTime
+  status    String
+  createdAt DateTime @default(now())
+
+  student   Student     @relation(fields: [studentId], references: [userId], onDelete: Cascade)
+  session   Session     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  marker    StaffMember @relation(fields: [markedBy], references: [userId])
+
+  @@unique([studentId, sessionId, date])
+}
+
+// --------------------------------------------------------
+// Models for Live Attendance System (Not in ERD but needed)
+// --------------------------------------------------------
+
+model AttendanceSession {
+  id        String   @id @default(uuid())
+  staffId   Int
+  secret    String
+  status    String   @default("ACTIVE") // ACTIVE, CLOSED
+  startTime DateTime @default(now())
+  endTime   DateTime?
+  createdAt DateTime @default(now())
+
+  staff             StaffMember        @relation(fields: [staffId], references: [userId])
+  markedAttendances AttendanceRecord[]
+}
+
+model AttendanceRecord {
+  id                  Int      @id @default(autoincrement())
+  studentId           Int
+  attendanceSessionId String
+  markedAt            DateTime @default(now())
+
+  student Student           @relation(fields: [studentId], references: [userId])
+  session AttendanceSession @relation(fields: [attendanceSessionId], references: [id])
+
+  @@unique([studentId, attendanceSessionId])
+}
