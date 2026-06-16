@@ -1,0 +1,567 @@
+{
+  "api": {
+    "baseUrl": "http://localhost:3000/api",
+    "production": "https://attendobackend-production.up.railway.app/api",
+    "routes": [
+      {
+        "module": "Auth",
+        "prefix": "/auth",
+        "requiresAuth": false,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/auth/register",
+            "summary": "Register a new user account",
+            "requiresAuth": false,
+            "roles": [],
+            "payload": {
+              "email": "student@example.com",
+              "password": "SecurePassword123",
+              "name": "John Doe",
+              "role": "STUDENT"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/auth/verify-otp",
+            "summary": "Verify OTP code sent to user email",
+            "requiresAuth": false,
+            "roles": [],
+            "payload": {
+              "email": "student@example.com",
+              "otp": "123456"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/auth/resend-otp",
+            "summary": "Resend OTP code to user email",
+            "requiresAuth": false,
+            "roles": [],
+            "payload": {
+              "email": "student@example.com"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/auth/login",
+            "summary": "Login user with email and password",
+            "requiresAuth": false,
+            "roles": [],
+            "payload": {
+              "email": "student@example.com",
+              "password": "SecurePassword123"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/auth/me",
+            "summary": "Get current authenticated user profile",
+            "requiresAuth": true,
+            "roles": []
+          }
+        ]
+      },
+      {
+        "module": "Students",
+        "prefix": "/students",
+        "requiresAuth": true,
+        "endpoints": [
+          {
+            "method": "GET",
+            "path": "/students",
+            "summary": "Get all students",
+            "requiresAuth": true,
+            "roles": ["MANAGER", "PROFESSOR", "ASSISTANT"]
+          },
+          {
+            "method": "GET",
+            "path": "/students/:id",
+            "summary": "Get a specific student by ID",
+            "requiresAuth": true,
+            "roles": []
+          },
+          {
+            "method": "POST",
+            "path": "/students",
+            "summary": "Create a new student",
+            "requiresAuth": true,
+            "roles": ["MANAGER"],
+            "payload": {
+              "email": "student@example.com",
+              "name": "John Doe",
+              "studentId": "STU123456",
+              "classId": "6407a1b8c1d2e3f4g5h6i7j8"
+            }
+          },
+          {
+            "method": "PUT",
+            "path": "/students/:id",
+            "summary": "Update student information",
+            "requiresAuth": true,
+            "roles": ["MANAGER"],
+            "payload": {
+              "email": "newemail@example.com",
+              "name": "Jane Doe",
+              "classId": "6407a1b8c1d2e3f4g5h6i7j8"
+            }
+          },
+          {
+            "method": "DELETE",
+            "path": "/students/:id",
+            "summary": "Delete a student",
+            "requiresAuth": true,
+            "roles": ["MANAGER"]
+          },
+          {
+            "method": "GET",
+            "path": "/students/:id/attendance",
+            "summary": "Get attendance history for a specific student",
+            "requiresAuth": true,
+            "roles": []
+          }
+        ]
+      },
+      {
+        "module": "Staff",
+        "prefix": "/staff",
+        "requiresAuth": true,
+        "endpoints": [
+          {
+            "method": "GET",
+            "path": "/staff",
+            "summary": "Get all staff members",
+            "requiresAuth": true,
+            "roles": ["MANAGER"]
+          },
+          {
+            "method": "GET",
+            "path": "/staff/:id",
+            "summary": "Get a specific staff member by ID",
+            "requiresAuth": true,
+            "roles": ["MANAGER"]
+          },
+          {
+            "method": "POST",
+            "path": "/staff",
+            "summary": "Create a new staff member",
+            "requiresAuth": true,
+            "roles": ["MANAGER"],
+            "payload": {
+              "email": "professor@example.com",
+              "name": "Dr. Ahmed Hassan",
+              "role": "PROFESSOR",
+              "departmentId": "6407a1b8c1d2e3f4g5h6i7j8"
+            }
+          },
+          {
+            "method": "PUT",
+            "path": "/staff/:id",
+            "summary": "Update a staff member",
+            "requiresAuth": true,
+            "roles": ["MANAGER"],
+            "payload": {
+              "email": "newemail@example.com",
+              "name": "Dr. Ahmed Hassan",
+              "role": "ASSISTANT",
+              "departmentId": "6407a1b8c1d2e3f4g5h6i7j8"
+            }
+          },
+          {
+            "method": "DELETE",
+            "path": "/staff/:id",
+            "summary": "Delete a staff member",
+            "requiresAuth": true,
+            "roles": ["MANAGER"]
+          }
+        ]
+      },
+      {
+        "module": "Departments",
+        "prefix": "/departments",
+        "requiresAuth": true,
+        "endpoints": [
+          {
+            "method": "GET",
+            "path": "/departments",
+            "summary": "Get all departments",
+            "requiresAuth": true,
+            "roles": []
+          },
+          {
+            "method": "GET",
+            "path": "/departments/:id",
+            "summary": "Get a specific department by ID",
+            "requiresAuth": true,
+            "roles": []
+          },
+          {
+            "method": "POST",
+            "path": "/departments",
+            "summary": "Create a new department",
+            "requiresAuth": true,
+            "roles": ["MANAGER"],
+            "payload": {
+              "name": "Computer Science",
+              "code": "CS"
+            }
+          },
+          {
+            "method": "PUT",
+            "path": "/departments/:id",
+            "summary": "Update a department",
+            "requiresAuth": true,
+            "roles": ["MANAGER"],
+            "payload": {
+              "name": "Computer Science & Engineering",
+              "code": "CSE"
+            }
+          },
+          {
+            "method": "DELETE",
+            "path": "/departments/:id",
+            "summary": "Delete a department",
+            "requiresAuth": true,
+            "roles": ["MANAGER"]
+          }
+        ]
+      },
+      {
+        "module": "Classes",
+        "prefix": "/classes",
+        "requiresAuth": true,
+        "endpoints": [
+          {
+            "method": "GET",
+            "path": "/classes",
+            "summary": "Get all classes",
+            "requiresAuth": true,
+            "roles": []
+          },
+          {
+            "method": "GET",
+            "path": "/classes/:id",
+            "summary": "Get a specific class by ID",
+            "requiresAuth": true,
+            "roles": []
+          },
+          {
+            "method": "POST",
+            "path": "/classes",
+            "summary": "Create a new class",
+            "requiresAuth": true,
+            "roles": ["MANAGER"],
+            "payload": {
+              "name": "Class A - Year 1",
+              "code": "CS-1A",
+              "departmentId": "6407a1b8c1d2e3f4g5h6i7j8"
+            }
+          },
+          {
+            "method": "PUT",
+            "path": "/classes/:id",
+            "summary": "Update a class",
+            "requiresAuth": true,
+            "roles": ["MANAGER"],
+            "payload": {
+              "name": "Class A - Year 1 (Updated)",
+              "code": "CS-1A-UPD"
+            }
+          },
+          {
+            "method": "DELETE",
+            "path": "/classes/:id",
+            "summary": "Delete a class",
+            "requiresAuth": true,
+            "roles": ["MANAGER"]
+          },
+          {
+            "method": "POST",
+            "path": "/classes/:id/modules",
+            "summary": "Add a module to a class",
+            "requiresAuth": true,
+            "roles": ["MANAGER"],
+            "payload": {
+              "moduleId": "6407a1b8c1d2e3f4g5h6i7j8"
+            }
+          }
+        ]
+      },
+      {
+        "module": "Modules",
+        "prefix": "/modules",
+        "requiresAuth": true,
+        "endpoints": [
+          {
+            "method": "GET",
+            "path": "/modules",
+            "summary": "Get all modules",
+            "requiresAuth": true,
+            "roles": []
+          },
+          {
+            "method": "GET",
+            "path": "/modules/:id",
+            "summary": "Get a specific module by ID",
+            "requiresAuth": true,
+            "roles": []
+          },
+          {
+            "method": "POST",
+            "path": "/modules",
+            "summary": "Create a new module",
+            "requiresAuth": true,
+            "roles": ["MANAGER"],
+            "payload": {
+              "name": "Data Structures",
+              "code": "DS101",
+              "description": "Introduction to data structures and algorithms"
+            }
+          },
+          {
+            "method": "PUT",
+            "path": "/modules/:id",
+            "summary": "Update a module",
+            "requiresAuth": true,
+            "roles": ["MANAGER"],
+            "payload": {
+              "name": "Data Structures & Algorithms",
+              "code": "DS101",
+              "description": "Advanced data structures and algorithm design"
+            }
+          },
+          {
+            "method": "DELETE",
+            "path": "/modules/:id",
+            "summary": "Delete a module",
+            "requiresAuth": true,
+            "roles": ["MANAGER"]
+          }
+        ]
+      },
+      {
+        "module": "Rooms",
+        "prefix": "/rooms",
+        "requiresAuth": true,
+        "endpoints": [
+          {
+            "method": "GET",
+            "path": "/rooms",
+            "summary": "Get all rooms",
+            "requiresAuth": true,
+            "roles": []
+          },
+          {
+            "method": "POST",
+            "path": "/rooms",
+            "summary": "Create a new room",
+            "requiresAuth": true,
+            "roles": ["MANAGER"],
+            "payload": {
+              "name": "Room 101",
+              "building": "Building A",
+              "capacity": 50
+            }
+          },
+          {
+            "method": "PUT",
+            "path": "/rooms/:id",
+            "summary": "Update a room",
+            "requiresAuth": true,
+            "roles": ["MANAGER"],
+            "payload": {
+              "name": "Room 101 (Renovated)",
+              "building": "Building A",
+              "capacity": 60
+            }
+          },
+          {
+            "method": "DELETE",
+            "path": "/rooms/:id",
+            "summary": "Delete a room",
+            "requiresAuth": true,
+            "roles": ["MANAGER"]
+          }
+        ]
+      },
+      {
+        "module": "Sessions",
+        "prefix": "/sessions",
+        "requiresAuth": true,
+        "endpoints": [
+          {
+            "method": "GET",
+            "path": "/sessions",
+            "summary": "Get all sessions",
+            "requiresAuth": true,
+            "roles": []
+          },
+          {
+            "method": "GET",
+            "path": "/sessions/:id",
+            "summary": "Get a specific session by ID",
+            "requiresAuth": true,
+            "roles": []
+          },
+          {
+            "method": "POST",
+            "path": "/sessions",
+            "summary": "Create a new session",
+            "requiresAuth": true,
+            "roles": ["MANAGER"],
+            "payload": {
+              "classId": "6407a1b8c1d2e3f4g5h6i7j8",
+              "moduleId": "6407a1b8c1d2e3f4g5h6i7j8",
+              "sessionDate": "2026-06-20"
+            }
+          },
+          {
+            "method": "PUT",
+            "path": "/sessions/:id",
+            "summary": "Update a session",
+            "requiresAuth": true,
+            "roles": ["MANAGER"],
+            "payload": {
+              "classId": "6407a1b8c1d2e3f4g5h6i7j8",
+              "moduleId": "6407a1b8c1d2e3f4g5h6i7j8",
+              "sessionDate": "2026-06-21"
+            }
+          },
+          {
+            "method": "DELETE",
+            "path": "/sessions/:id",
+            "summary": "Delete a session",
+            "requiresAuth": true,
+            "roles": ["MANAGER"]
+          }
+        ]
+      },
+      {
+        "module": "Attendance",
+        "prefix": "/attendance",
+        "requiresAuth": true,
+        "endpoints": [
+          {
+            "method": "GET",
+            "path": "/attendance/report/class/:classId",
+            "summary": "Get attendance report for a specific class",
+            "requiresAuth": true,
+            "roles": ["MANAGER", "PROFESSOR", "ASSISTANT"]
+          },
+          {
+            "method": "GET",
+            "path": "/attendance",
+            "summary": "Get all attendance records",
+            "requiresAuth": true,
+            "roles": []
+          },
+          {
+            "method": "POST",
+            "path": "/attendance",
+            "summary": "Mark attendance for a single student",
+            "requiresAuth": true,
+            "roles": ["PROFESSOR", "ASSISTANT", "MANAGER"],
+            "payload": {
+              "studentId": "6407a1b8c1d2e3f4g5h6i7j8",
+              "date": "2026-06-16",
+              "status": "PRESENT"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/attendance/bulk",
+            "summary": "Mark attendance for multiple students at once",
+            "requiresAuth": true,
+            "roles": ["PROFESSOR", "ASSISTANT", "MANAGER"],
+            "payload": [
+              {
+                "studentId": "6407a1b8c1d2e3f4g5h6i7j8",
+                "date": "2026-06-16",
+                "status": "PRESENT"
+              },
+              {
+                "studentId": "6407a1b8c1d2e3f4g5h6i7j9",
+                "date": "2026-06-16",
+                "status": "ABSENT"
+              }
+            ]
+          },
+          {
+            "method": "PUT",
+            "path": "/attendance/:id",
+            "summary": "Update an attendance record",
+            "requiresAuth": true,
+            "roles": ["PROFESSOR", "ASSISTANT", "MANAGER"],
+            "payload": {
+              "status": "ABSENT"
+            }
+          },
+          {
+            "method": "DELETE",
+            "path": "/attendance/:id",
+            "summary": "Delete an attendance record",
+            "requiresAuth": true,
+            "roles": ["MANAGER"]
+          }
+        ]
+      },
+      {
+        "module": "Live Attendance",
+        "prefix": "/live",
+        "requiresAuth": true,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/live/start",
+            "summary": "Start a live attendance session (for instructor)",
+            "requiresAuth": true,
+            "roles": ["PROFESSOR", "ASSISTANT", "MANAGER"],
+            "payload": {
+              "classId": "6407a1b8c1d2e3f4g5h6i7j8",
+              "moduleId": "6407a1b8c1d2e3f4g5h6i7j8"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/live/close",
+            "summary": "Close an active live attendance session",
+            "requiresAuth": true,
+            "roles": ["PROFESSOR", "ASSISTANT", "MANAGER"],
+            "payload": {
+              "sessionId": "6407a1b8c1d2e3f4g5h6i7j8"
+            }
+          },
+          {
+            "method": "GET",
+            "path": "/live/my-sessions",
+            "summary": "Get all live attendance sessions created by current instructor",
+            "requiresAuth": true,
+            "roles": ["PROFESSOR", "ASSISTANT", "MANAGER"]
+          },
+          {
+            "method": "GET",
+            "path": "/live/:sessionId/records",
+            "summary": "Get attendance records for a specific live session",
+            "requiresAuth": true,
+            "roles": ["PROFESSOR", "ASSISTANT", "MANAGER"]
+          },
+          {
+            "method": "POST",
+            "path": "/live/join",
+            "summary": "Join an active live attendance session (for student)",
+            "requiresAuth": true,
+            "roles": ["STUDENT"],
+            "payload": {
+              "sessionId": "6407a1b8c1d2e3f4g5h6i7j8"
+            }
+          }
+        ]
+      }
+    ],
+    "authentication": {
+      "type": "JWT Bearer Token",
+      "headerFormat": "Authorization: Bearer <token>"
+    },
+    "roles": ["STUDENT", "PROFESSOR", "ASSISTANT", "MANAGER"]
+  }
+}

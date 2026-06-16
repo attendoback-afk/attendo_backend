@@ -8,7 +8,9 @@ async function getAll(req, res) {
     });
     res.json({ success: true, data: departments });
   } catch (err) {
-    res.status(500).json({ success: false, message: "Failed to fetch departments" });
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to fetch departments" });
   }
 }
 
@@ -19,35 +21,44 @@ async function getOne(req, res) {
       where: { id: Number(req.params.id) },
       include: { classes: true },
     });
-    if (!dept) return res.status(404).json({ success: false, message: "Department not found" });
+    if (!dept)
+      return res
+        .status(404)
+        .json({ success: false, message: "Department not found" });
     res.json({ success: true, data: dept });
   } catch (err) {
-    res.status(500).json({ success: false, message: "Failed to fetch department" });
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to fetch department" });
   }
 }
 
 // POST /api/departments
 async function create(req, res) {
   try {
-    const { name, description } = req.body;
-    const dept = await prisma.department.create({ data: { name, description } });
+    const { name, code } = req.body;
+    const dept = await prisma.department.create({ data: { name, code } });
     res.status(201).json({ success: true, data: dept });
   } catch (err) {
-    res.status(500).json({ success: false, message: "Failed to create department" });
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to create department" });
   }
 }
 
 // PUT /api/departments/:id
 async function update(req, res) {
   try {
-    const { name, description } = req.body;
+    const { name, code } = req.body;
     const dept = await prisma.department.update({
       where: { id: Number(req.params.id) },
-      data: { name, description },
+      data: { name, code },
     });
     res.json({ success: true, data: dept });
   } catch (err) {
-    res.status(500).json({ success: false, message: "Failed to update department" });
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to update department" });
   }
 }
 
@@ -57,7 +68,9 @@ async function remove(req, res) {
     await prisma.department.delete({ where: { id: Number(req.params.id) } });
     res.json({ success: true, message: "Department deleted" });
   } catch (err) {
-    res.status(500).json({ success: false, message: "Failed to delete department" });
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to delete department" });
   }
 }
 
