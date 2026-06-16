@@ -13,7 +13,7 @@ function createToken(user, role = null) {
   return jwt.sign(
     { userId: user.id, email: user.email, role },
     process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRES_IN || "7d" }
+    { expiresIn: process.env.JWT_EXPIRES_IN || "7d" },
   );
 }
 
@@ -28,7 +28,9 @@ async function register(req, res) {
     // تحقق إن الإيميل مش موجود قبل كده
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
-      return res.status(400).json({ success: false, message: "Email already registered" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Email already registered" });
     }
 
     // تشفير الباسورد
@@ -41,7 +43,9 @@ async function register(req, res) {
 
     // إنشاء وإرسال OTP
     const otp = generateOTP();
-    const expiresAt = new Date(Date.now() + (process.env.OTP_EXPIRES_MINUTES || 10) * 60 * 1000);
+    const expiresAt = new Date(
+      Date.now() + (process.env.OTP_EXPIRES_MINUTES || 10) * 60 * 1000,
+    );
 
     await prisma.emailVerification.upsert({
       where: { email: user.email },
@@ -71,7 +75,9 @@ async function verifyOTP(req, res) {
   try {
     const { email, otp } = req.body;
 
-    const record = await prisma.emailVerification.findUnique({ where: { email } });
+    const record = await prisma.emailVerification.findUnique({
+      where: { email },
+    });
 
     if (!record) {
       return res.status(400).json({ success: false, message: "OTP not found" });
@@ -93,7 +99,9 @@ async function verifyOTP(req, res) {
     res.json({ success: true, message: "Email verified successfully" });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ success: false, message: "OTP verification failed" });
+    res
+      .status(500)
+      .json({ success: false, message: "OTP verification failed" });
   }
 }
 
@@ -106,11 +114,19 @@ async function resendOTP(req, res) {
     const { email } = req.body;
 
     const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) return res.status(404).json({ success: false, message: "User not found" });
-    if (!user.invalid) return res.status(400).json({ success: false, message: "Already verified" });
+    if (!user)
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    if (!user.invalid)
+      return res
+        .status(400)
+        .json({ success: false, message: "Already verified" });
 
     const otp = generateOTP();
-    const expiresAt = new Date(Date.now() + (process.env.OTP_EXPIRES_MINUTES || 10) * 60 * 1000);
+    const expiresAt = new Date(
+      Date.now() + (process.env.OTP_EXPIRES_MINUTES || 10) * 60 * 1000,
+    );
 
     await prisma.emailVerification.upsert({
       where: { email },
@@ -136,20 +152,29 @@ async function login(req, res) {
 
     const user = await prisma.user.findUnique({
       where: { email },
-      include: { 
-        staff: { include: { role: true } }, 
-        student: true 
+      include: {
+        staff: { include: { role: true } },
+        student: true,
       },
     });
 
-    if (!user) return res.status(401).json({ success: false, message: "Invalid credentials" });
-    if (user.invalid) return res.status(403).json({ success: false, message: "Please verify your email first" });
+    if (!user)
+      return res
+        .status(401)
+        .json({ success: false, message: "Invalid credentials" });
+    if (user.invalid)
+      return res
+        .status(403)
+        .json({ success: false, message: "Please verify your email first" });
 
     const passwordMatch = await bcrypt.compare(password, user.passwordHash);
-    if (!passwordMatch) return res.status(401).json({ success: false, message: "Invalid credentials" });
+    if (!passwordMatch)
+      return res
+        .status(401)
+        .json({ success: false, message: "Invalid credentials" });
 
     // تحديد الـ role من الـ staff أو student
-    const role = user.staff?.role?.name || (user.student ? "STUDENT" : null);
+    const role = user.staff?.role?.name || (user.manger ? "MANAGER" : null);
     const token = createToken(user, role);
 
     res.json({
@@ -182,7 +207,10 @@ async function getMe(req, res) {
       },
     });
 
-    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+    if (!user)
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
 
     const { passwordHash, ...safeUser } = user;
     res.json({ success: true, data: safeUser });
