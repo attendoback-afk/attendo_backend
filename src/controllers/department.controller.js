@@ -36,8 +36,10 @@ async function getOne(req, res) {
 // POST /api/departments
 async function create(req, res) {
   try {
-    const { name, code } = req.body;
-    const dept = await prisma.department.create({ data: { name, code } });
+    const { name, description } = req.body;
+    const dept = await prisma.department.create({
+      data: { name, description },
+    });
     res.status(201).json({ success: true, data: dept });
   } catch (err) {
     res
@@ -49,10 +51,10 @@ async function create(req, res) {
 // PUT /api/departments/:id
 async function update(req, res) {
   try {
-    const { name, code } = req.body;
+    const { name, description } = req.body;
     const dept = await prisma.department.update({
       where: { id: Number(req.params.id) },
-      data: { name, code },
+      data: { name, description },
     });
     res.json({ success: true, data: dept });
   } catch (err) {
