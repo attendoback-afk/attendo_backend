@@ -3,77 +3,78 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider  = "postgresql"
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
 model User {
   id           Int      @id @default(autoincrement())
-  inviteId     String?  // From ERD (optional)
+  inviteId     String?
   passwordHash String
   fullName     String
   email        String   @unique
   createdAt    DateTime @default(now())
-  invalid      Boolean  @default(true) 
-
-  student      Student?
-  staff        StaffMember?
+  invalid      Boolean  @default(true)
+  role         String?
+  student Student?
+  staff   StaffMember?
 }
 
 model EmailVerification {
-  id        String   @id @default(uuid()) // From ERD
+  id        String   @id @default(uuid())
   otp       String
-  email     String   @unique // ERD uses email
+  email     String   @unique
   createdAt DateTime @default(now())
   expiresAt DateTime
 }
 
 model Role {
-  id    Int    @id @default(autoincrement())
-  name  String @unique
+  id   Int    @id @default(autoincrement())
+  name String @unique
 
   staffMembers StaffMember[]
 }
 
 model Department {
-  id          Int      @id @default(autoincrement())
+  id          Int     @id @default(autoincrement())
   name        String
   description String?
 
-  classes     Class[]
+  classes Class[]
 }
 
 model Class {
-  id           Int        @id @default(autoincrement())
+  id           Int     @id @default(autoincrement())
   name         String
-  classCode    String     @unique
+  classCode    String  @unique
   departmentId Int
   year         Int
   description  String?
 
-  department   Department @relation(fields: [departmentId], references: [id])
-  students     Student[]
-  modules      ClassModule[]
-  sessions     Session[]
+  department Department @relation(fields: [departmentId], references: [id])
+
+  students Student[]
+  modules  ClassModule[]
+  sessions Session[]
 }
 
 model Module {
-  id          Int      @id @default(autoincrement())
+  id          Int     @id @default(autoincrement())
   name        String
-  code        String   @unique
+  code        String  @unique
   description String?
 
-  classes     ClassModule[]
-  sessions    Session[]
+  classes  ClassModule[]
+  sessions Session[]
 }
 
 model ClassModule {
   classId  Int
   moduleId Int
 
-  class    Class  @relation(fields: [classId], references: [id], onDelete: Cascade)
-  module   Module @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  class  Class  @relation(fields: [classId], references: [id], onDelete: Cascade)
+  module Module @relation(fields: [moduleId], references: [id], onDelete: Cascade)
 
   @@id([classId, moduleId])
 }
@@ -90,71 +91,91 @@ model Session {
   classId   Int
   moduleId  Int
   roomId    Int
-  dayOfWeek Int      // 0 = Sunday, ..., 6 = Saturday
+  dayOfWeek Int
   startTime DateTime
   endTime   DateTime
 
-  class       Class        @relation(fields: [classId], references: [id])
-  module      Module       @relation(fields: [moduleId], references: [id])
-  room        Room         @relation(fields: [roomId], references: [id])
+  class  Class  @relation(fields: [classId], references: [id])
+  module Module @relation(fields: [moduleId], references: [id])
+  room   Room   @relation(fields: [roomId], references: [id])
+
   attendances Attendance[]
 }
 
 model StaffMember {
-  userId  Int @id 
-  roleId  Int
+  userId Int @id
+  roleId Int
 
-  user    User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role    Role @relation(fields: [roleId], references: [id])
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id])
 
   markedAttendances Attendance[]
   liveSessions      AttendanceSession[]
 }
 
 model Student {
-  userId      Int    @id 
+  userId      Int    @id
   classId     Int
   studentCode String @unique
 
-  user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  class       Class  @relation(fields: [classId], references: [id])
+  imageUrl       String?
+  faceRegistered Boolean @default(false)
 
-  attendances Attendance[]
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  class Class @relation(fields: [classId], references: [id])
+
+  images                StudentImage[]
+  embeddings            FaceEmbedding[]
+  attendances           Attendance[]
   liveAttendanceRecords AttendanceRecord[]
 }
 
+model StudentImage {
+  id        Int      @id @default(autoincrement())
+  studentId Int
+  imageUrl  String
+  isPrimary Boolean  @default(false)
+  createdAt DateTime @default(now())
 
+  student Student @relation(fields: [studentId], references: [userId], onDelete: Cascade)
+}
+
+model FaceEmbedding {
+  id        Int      @id @default(autoincrement())
+  studentId Int
+  embedding String
+  createdAt DateTime @default(now())
+
+  student Student @relation(fields: [studentId], references: [userId], onDelete: Cascade)
+}
 
 model Attendance {
   id        Int      @id @default(autoincrement())
   studentId Int
   sessionId Int
-  markedBy  Int 
+  markedBy  Int
   date      DateTime
   status    String
   createdAt DateTime @default(now())
 
-  student   Student     @relation(fields: [studentId], references: [userId], onDelete: Cascade)
-  session   Session     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  marker    StaffMember @relation(fields: [markedBy], references: [userId])
+  student Student     @relation(fields: [studentId], references: [userId], onDelete: Cascade)
+  session Session     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  marker  StaffMember @relation(fields: [markedBy], references: [userId])
 
   @@unique([studentId, sessionId, date])
 }
 
-// --------------------------------------------------------
-// Models for Live Attendance System (Not in ERD but needed)
-// --------------------------------------------------------
-
 model AttendanceSession {
-  id        String   @id @default(uuid())
+  id        String    @id @default(uuid())
   staffId   Int
   secret    String
-  status    String   @default("ACTIVE") // ACTIVE, CLOSED
-  startTime DateTime @default(now())
+  status    String    @default("ACTIVE")
+  startTime DateTime  @default(now())
   endTime   DateTime?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 
-  staff             StaffMember        @relation(fields: [staffId], references: [userId])
+  staff StaffMember @relation(fields: [staffId], references: [userId])
+
   markedAttendances AttendanceRecord[]
 }
 

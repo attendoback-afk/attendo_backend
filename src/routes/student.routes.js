@@ -1,3 +1,5 @@
+const faceCtrl = require("../controllers/face.controller");
+const upload = require("../middleware/upload");
 const router = require("express").Router();
 const ctrl = require("../controllers/student.controller");
 const { authenticate, authorize } = require("../middleware/auth.middleware");
@@ -28,15 +30,6 @@ router.get("/", authorize("MANAGER", "PROFESSOR", "ASSISTANT"), ctrl.getAll);
  *     summary: Get a specific student by ID
  *     security:
  *       - BearerAuth: []
- *     parameters:
- *       - name: id
- *         in: path
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Student data
  */
 router.get("/:id", ctrl.getOne);
 
@@ -49,24 +42,6 @@ router.get("/:id", ctrl.getOne);
  *     summary: Create a new student
  *     security:
  *       - BearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               email:
- *                 type: string
- *               name:
- *                 type: string
- *               studentId:
- *                 type: string
- *               classId:
- *                 type: string
- *     responses:
- *       201:
- *         description: Created student
  */
 router.post("/", authorize("MANAGER"), ctrl.create);
 
@@ -79,21 +54,6 @@ router.post("/", authorize("MANAGER"), ctrl.create);
  *     summary: Update student information
  *     security:
  *       - BearerAuth: []
- *     parameters:
- *       - name: id
- *         in: path
- *         required: true
- *         schema:
- *           type: string
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *     responses:
- *       200:
- *         description: Updated student
  */
 router.put("/:id", authorize("MANAGER"), ctrl.update);
 
@@ -106,15 +66,6 @@ router.put("/:id", authorize("MANAGER"), ctrl.update);
  *     summary: Delete a student
  *     security:
  *       - BearerAuth: []
- *     parameters:
- *       - name: id
- *         in: path
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Deletion confirmation
  */
 router.delete("/:id", authorize("MANAGER"), ctrl.remove);
 
@@ -127,16 +78,56 @@ router.delete("/:id", authorize("MANAGER"), ctrl.remove);
  *     summary: Get attendance history for a specific student
  *     security:
  *       - BearerAuth: []
- *     parameters:
- *       - name: id
- *         in: path
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Student's attendance records
  */
 router.get("/:id/attendance", ctrl.getAttendance);
+
+/**
+ * @swagger
+ * /students/register-face:
+ *   post:
+ *     tags:
+ *       - Students
+ *     summary: Upload student face image
+ *     security:
+ *       - BearerAuth: []
+ */
+router.post(
+  "/register-face",
+  authorize("STUDENT"),
+  upload.single("image"),
+  faceCtrl.registerFace
+);
+
+/**
+ * @swagger
+ * /students/register-embedding:
+ *   post:
+ *     tags:
+ *       - Students
+ *     summary: Save student face embedding
+ *     security:
+ *       - BearerAuth: []
+ */
+router.post(
+  "/register-embedding",
+  authorize("STUDENT"),
+  faceCtrl.registerEmbedding
+);
+
+/**
+ * @swagger
+ * /students/my-face:
+ *   get:
+ *     tags:
+ *       - Students
+ *     summary: Get current student face data
+ *     security:
+ *       - BearerAuth: []
+ */
+router.get(
+  "/my-face",
+  authorize("STUDENT"),
+  faceCtrl.getMyFace
+);
 
 module.exports = router;
