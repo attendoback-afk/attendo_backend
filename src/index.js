@@ -42,6 +42,7 @@ app.use(express.json());
 const routeDefinitions = [
   ["/api/auth", "./routes/auth.routes"],
   ["/api/students", "./routes/student.routes"],
+  ["/api", "./routes/upload.routes"],
   ["/api/staff", "./routes/staff.routes"],
   ["/api/departments", "./routes/department.routes"],
   ["/api/classes", "./routes/class.routes"],
@@ -60,11 +61,13 @@ for (const [mountPath, routeModule] of routeDefinitions) {
   } catch (err) {
     console.error(
       `[Routes] Failed to load route "${mountPath}" from "${routeModule}":`,
-      err.message
+    err.message,
     );
   }
 }
-console.log(`[Routes] ${loadedRoutes}/${routeDefinitions.length} route modules loaded successfully`);
+console.log(
+  `[Routes] ${loadedRoutes}/${routeDefinitions.length} route modules loaded successfully`,
+);
 
 // ─── Health Check ─────────────────────────────────────────────
 app.get("/", (req, res) => res.json({ message: "Attendo API is running 🎓" }));
@@ -85,7 +88,9 @@ app.use((err, req, res, next) => {
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server running on port ${PORT}`);
-  console.log(`[Startup] Server is ready and accepting connections on port ${PORT}`);
+  console.log(
+    `[Startup] Server is ready and accepting connections on port ${PORT}`,
+  );
 });
 
 const options = {
@@ -194,7 +199,10 @@ const options = {
           type: "object",
           properties: {
             success: { type: "boolean", example: true },
-            message: { type: "string", example: "Attendance marked successfully" },
+            message: {
+              type: "string",
+              example: "Attendance marked successfully",
+            },
             data: {
               type: "object",
               properties: {
@@ -216,7 +224,11 @@ const options = {
                     id: { type: "string", format: "uuid" },
                     status: { type: "string", example: "ACTIVE" },
                     startTime: { type: "string", format: "date-time" },
-                    endTime: { type: "string", format: "date-time", nullable: true },
+                    endTime: {
+                      type: "string",
+                      format: "date-time",
+                      nullable: true,
+                    },
                     totalMarked: { type: "integer", example: 1 },
                   },
                 },
@@ -250,7 +262,11 @@ const options = {
                   secret: { type: "string" },
                   status: { type: "string", example: "ACTIVE" },
                   startTime: { type: "string", format: "date-time" },
-                  endTime: { type: "string", format: "date-time", nullable: true },
+                  endTime: {
+                    type: "string",
+                    format: "date-time",
+                    nullable: true,
+                  },
                   createdAt: { type: "string", format: "date-time" },
                   _count: {
                     type: "object",

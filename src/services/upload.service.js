@@ -1,31 +1,71 @@
-const supabase= require ("../utils/supabase.js");
+const crypto = require("crypto");
+const path = require("path");
+const supabase = require("../utils/supabase");
 
- const uploadImage = async (file) => {
+const BUCKET = "attendo-uploads";
+
+function assertSupabaseClient() {
   if (!supabase) {
-    throw new Error(
-      "Supabase is not configured. Set SUPABASE_URL and SUPABASE_ANON_KEY in Railway Variables."
-    );
+    throw new Error("Supabase client is not configured");
   }
+}
 
-  const fileName = `${Date.now()}-${file.originalname}`;
+function buildStoragePath(folder, originalName) {
+  const safeFolder = String(folder || "general").replace(/^\/+|\/+$/g, "");
+  const extension = path.extname(originalName || "").toLowerCase();
+  const uniqueName = `${crypto.randomUUID()}${extension}`;
+  return `${safeFolder}/${uniqueName}`;
+}
 
-  const { error } = await supabase.storage
-    .from("student-images")
-    .upload(fileName, file.buffer, {
-      contentType: file.mimetype,
-      upsert: true,
-    });
+async function uploadFile(fileBuffer, originalName, folder, mimeType) {
+  assertSupabaseClient();
+
+  const filePath = buildStoragePath(folder, originalName);
+  const { error } = await supabase.storage.from(BUCKET).upload(filePath, fileBuffer, {
+    contentType: mimeType,
+    upsert: false,
+  });
 
   if (error) {
     throw error;
   }
 
-  const { data } = supabase.storage
-    .from("student-images")
-    .getPublicUrl(fileName);
+  const { data } = supabase.storage.from(BUCKET).getPublicUrl(filePath);
 
-  return data.publicUrl;
-};
-module.exports={
-    uploadImage,
+  return {
+    path: filePath,
+    publicUrl: data.publicUrl,
+  };
+}
+
+async function getSignedUrl(filePath, expiresInSeconds = 3600) {
+  assertSupabaseClient();
+
+  const { data, error } = await supabase.storage
+    .from(BUCKET)
+    .createSignedUrl(filePath, expiresInSeconds);
+
+  if (error) {
+    throw error;
+  }
+
+  return data.signedUrl;
+}
+
+async function deleteFile(filePath) {
+  assertSupabaseClient();
+
+  const { error } = await supabase.storage.from(BUCKET).remove([filePath]);
+
+  if (error) {
+    throw error;
+  }
+
+  return true;
+}
+
+module.exports = {
+  uploadFile,
+  getSignedUrl,
+  deleteFile,
 };

@@ -1,5 +1,5 @@
 const prisma = require("../utils/prisma");
-const { uploadImage } = require("../services/upload.service");
+const uploadService = require("../services/upload.service");
 
 async function registerFace(req, res) {
   try {
@@ -12,12 +12,18 @@ async function registerFace(req, res) {
       });
     }
 
-    const imageUrl = await uploadImage(req.file);
+    const folder = `student-faces/${studentId}`;
+    const { path: imagePath, publicUrl } = await uploadService.uploadFile(
+      req.file.buffer,
+      req.file.originalname,
+      folder,
+      req.file.mimetype,
+    );
 
     await prisma.studentImage.create({
       data: {
         studentId,
-        imageUrl,
+        imageUrl: imagePath,
       },
     });
 
@@ -26,7 +32,7 @@ async function registerFace(req, res) {
         userId: studentId,
       },
       data: {
-        imageUrl,
+        imageUrl: imagePath,
         faceRegistered: true,
       },
     });
@@ -34,7 +40,10 @@ async function registerFace(req, res) {
     return res.json({
       success: true,
       message: "Face registered successfully",
-      imageUrl,
+      data: {
+        path: imagePath,
+        publicUrl,
+      },
     });
   } catch (err) {
     console.error(err);
