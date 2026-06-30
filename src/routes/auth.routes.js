@@ -24,14 +24,14 @@ const { authenticate } = require("../middleware/auth.middleware");
  *             required:
  *               - email
  *               - password
- *               - name
+ *               - fullName
  *               - role
  *             properties:
  *               email:
  *                 type: string
  *               password:
  *                 type: string
- *               name:
+ *               fullName:
  *                 type: string
  *               role:
  *                 type: string
