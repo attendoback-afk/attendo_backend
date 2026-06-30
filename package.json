@@ -5,12 +5,8 @@
   "main": "src/index.js",
   "scripts": {
     "dev": "nodemon src/index.js",
-    "test": "node e2e_attendo_flow.js",
-    "test:qa": "node qa_test.js",
     "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev",
-    "build": "npx prisma generate",
-    "start": "npx prisma migrate deploy && node src/index.js"
+    "prisma:migrate": "prisma migrate dev"
   },
   "dependencies": {
     "@prisma/client": "^5.0.0",
