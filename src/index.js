@@ -283,5 +283,25 @@ const options = {
   apis: [path.resolve(__dirname, "routes/*.js").replace(/\\/g, "/")],
 };
 
-const specs = swaggerJsdoc(options);
-app.use("/api", swaggerUi.serve, swaggerUi.setup(specs));
+let specs = null;
+try {
+  specs = swaggerJsdoc(options);
+  app.use("/api", swaggerUi.serve, swaggerUi.setup(specs));
+  console.log("[Swagger] Documentation loaded successfully");
+} catch (err) {
+  console.error("[Swagger] Failed to generate docs:", err);
+  app.get("/api", (req, res) => {
+    res.status(503).json({
+      success: false,
+      message: "Swagger documentation is temporarily unavailable",
+    });
+  });
+}
+
+process.on("uncaughtException", (err) => {
+  console.error("[UncaughtException]", err);
+});
+
+process.on("unhandledRejection", (reason) => {
+  console.error("[UnhandledRejection]", reason);
+});
