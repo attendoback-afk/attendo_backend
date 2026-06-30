@@ -56,6 +56,13 @@ async function login(req, res) {
   try {
     const { email, password } = req.body;
 
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "email and password are required",
+      });
+    }
+
     const user = await prisma.user.findUnique({
       where: { email },
       include: {
@@ -96,7 +103,23 @@ async function login(req, res) {
     });
   } catch (err) {
     console.error("Critical Auth Error:", err);
-    return res.status(500).json({ success: false, message: "Login failed internally" });
+    const isPrismaConnectionIssue =
+      err?.name === "PrismaClientInitializationError" ||
+      err?.name === "PrismaClientRustPanicError" ||
+      err?.code === "P1001" ||
+      err?.code === "P1017";
+
+    if (isPrismaConnectionIssue) {
+      return res.status(503).json({
+        success: false,
+        message: "Database is unavailable, so login cannot be completed right now",
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: "Login failed internally",
+    });
   }
 }
 

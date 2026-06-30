@@ -6,16 +6,15 @@ router.use(authenticate);
 
 /**
  * @swagger
- * /modules/:
+ * /modules:
  *   get:
- *     tags:
- *       - Modules
+ *     tags: [Modules]
  *     summary: Get all modules
  *     security:
  *       - BearerAuth: []
  *     responses:
  *       200:
- *         description: List of all modules
+ *         description: List of modules
  */
 router.get("/", ctrl.getAll);
 
@@ -23,9 +22,8 @@ router.get("/", ctrl.getAll);
  * @swagger
  * /modules/{id}:
  *   get:
- *     tags:
- *       - Modules
- *     summary: Get a specific module by ID
+ *     tags: [Modules]
+ *     summary: Get a module by ID
  *     security:
  *       - BearerAuth: []
  *     parameters:
@@ -33,22 +31,57 @@ router.get("/", ctrl.getAll);
  *         in: path
  *         required: true
  *         schema:
- *           type: string
+ *           type: integer
  *     responses:
  *       200:
  *         description: Module data
+ *       404:
+ *         description: Module not found
  */
 router.get("/:id", ctrl.getOne);
 
 /**
  * @swagger
- * /modules/:
+ * /modules:
  *   post:
- *     tags:
- *       - Modules
- *     summary: Create a new module
+ *     tags: [Modules]
+ *     summary: Create a module
  *     security:
  *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [name, code]
+ *             properties:
+ *               name:
+ *                 type: string
+ *               code:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Module created
+ */
+router.post("/", authorize("MANAGER"), ctrl.create);
+
+/**
+ * @swagger
+ * /modules/{id}:
+ *   put:
+ *     tags: [Modules]
+ *     summary: Update a module
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: integer
  *     requestBody:
  *       required: true
  *       content:
@@ -63,35 +96,8 @@ router.get("/:id", ctrl.getOne);
  *               description:
  *                 type: string
  *     responses:
- *       201:
- *         description: Created module
- */
-router.post("/", authorize("MANAGER"), ctrl.create);
-
-/**
- * @swagger
- * /modules/{id}:
- *   put:
- *     tags:
- *       - Modules
- *     summary: Update a module
- *     security:
- *       - BearerAuth: []
- *     parameters:
- *       - name: id
- *         in: path
- *         required: true
- *         schema:
- *           type: string
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *     responses:
  *       200:
- *         description: Updated module
+ *         description: Module updated
  */
 router.put("/:id", authorize("MANAGER"), ctrl.update);
 
@@ -99,8 +105,7 @@ router.put("/:id", authorize("MANAGER"), ctrl.update);
  * @swagger
  * /modules/{id}:
  *   delete:
- *     tags:
- *       - Modules
+ *     tags: [Modules]
  *     summary: Delete a module
  *     security:
  *       - BearerAuth: []
@@ -109,10 +114,10 @@ router.put("/:id", authorize("MANAGER"), ctrl.update);
  *         in: path
  *         required: true
  *         schema:
- *           type: string
+ *           type: integer
  *     responses:
  *       200:
- *         description: Deletion confirmation
+ *         description: Module deleted
  */
 router.delete("/:id", authorize("MANAGER"), ctrl.remove);
 

@@ -6,16 +6,16 @@ router.use(authenticate);
 
 /**
  * @swagger
- * /departments/:
+ * /departments:
  *   get:
- *     tags:
- *       - Departments
+ *     tags: [Departments]
  *     summary: Get all departments
+ *     description: Returns departments with the number of classes in each department.
  *     security:
  *       - BearerAuth: []
  *     responses:
  *       200:
- *         description: List of all departments
+ *         description: List of departments
  */
 router.get("/", ctrl.getAll);
 
@@ -23,9 +23,8 @@ router.get("/", ctrl.getAll);
  * @swagger
  * /departments/{id}:
  *   get:
- *     tags:
- *       - Departments
- *     summary: Get a specific department by ID
+ *     tags: [Departments]
+ *     summary: Get a department by ID
  *     security:
  *       - BearerAuth: []
  *     parameters:
@@ -33,22 +32,55 @@ router.get("/", ctrl.getAll);
  *         in: path
  *         required: true
  *         schema:
- *           type: string
+ *           type: integer
  *     responses:
  *       200:
  *         description: Department data
+ *       404:
+ *         description: Department not found
  */
 router.get("/:id", ctrl.getOne);
 
 /**
  * @swagger
- * /departments/:
+ * /departments:
  *   post:
- *     tags:
- *       - Departments
- *     summary: Create a new department
+ *     tags: [Departments]
+ *     summary: Create a department
  *     security:
  *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [name]
+ *             properties:
+ *               name:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Department created
+ */
+router.post("/", authorize("MANAGER"), ctrl.create);
+
+/**
+ * @swagger
+ * /departments/{id}:
+ *   put:
+ *     tags: [Departments]
+ *     summary: Update a department
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: integer
  *     requestBody:
  *       required: true
  *       content:
@@ -58,38 +90,11 @@ router.get("/:id", ctrl.getOne);
  *             properties:
  *               name:
  *                 type: string
- *               code:
+ *               description:
  *                 type: string
  *     responses:
- *       201:
- *         description: Created department
- */
-router.post("/", authorize("MANAGER"), ctrl.create);
-
-/**
- * @swagger
- * /departments/{id}:
- *   put:
- *     tags:
- *       - Departments
- *     summary: Update a department
- *     security:
- *       - BearerAuth: []
- *     parameters:
- *       - name: id
- *         in: path
- *         required: true
- *         schema:
- *           type: string
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *     responses:
  *       200:
- *         description: Updated department
+ *         description: Department updated
  */
 router.put("/:id", authorize("MANAGER"), ctrl.update);
 
@@ -97,8 +102,7 @@ router.put("/:id", authorize("MANAGER"), ctrl.update);
  * @swagger
  * /departments/{id}:
  *   delete:
- *     tags:
- *       - Departments
+ *     tags: [Departments]
  *     summary: Delete a department
  *     security:
  *       - BearerAuth: []
@@ -107,10 +111,10 @@ router.put("/:id", authorize("MANAGER"), ctrl.update);
  *         in: path
  *         required: true
  *         schema:
- *           type: string
+ *           type: integer
  *     responses:
  *       200:
- *         description: Deletion confirmation
+ *         description: Department deleted
  */
 router.delete("/:id", authorize("MANAGER"), ctrl.remove);
 

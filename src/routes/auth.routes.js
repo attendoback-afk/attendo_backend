@@ -100,6 +100,7 @@ router.post("/resend-otp", resendOTP);
  *     tags:
  *       - Auth
  *     summary: Login user with email and password
+ *     description: Returns a JWT for an existing, verified account. If the user was created through the manager flow, use those credentials exactly as stored in the database.
  *     requestBody:
  *       required: true
  *       content:
@@ -114,9 +115,20 @@ router.post("/resend-otp", resendOTP);
  *                 type: string
  *               password:
  *                 type: string
+ *           example:
+ *             email: student@example.com
+ *             password: SecurePassword123
  *     responses:
  *       200:
  *         description: Login successful, JWT token provided
+ *       400:
+ *         description: Missing email or password
+ *       401:
+ *         description: Invalid credentials
+ *       403:
+ *         description: Email not verified yet
+ *       503:
+ *         description: Database unavailable
  */
 router.post("/login", login);
 

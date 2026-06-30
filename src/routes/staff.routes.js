@@ -6,16 +6,15 @@ router.use(authenticate);
 
 /**
  * @swagger
- * /staff/:
+ * /staff:
  *   get:
- *     tags:
- *       - Staff
+ *     tags: [Staff]
  *     summary: Get all staff members
  *     security:
  *       - BearerAuth: []
  *     responses:
  *       200:
- *         description: List of all staff members
+ *         description: List of staff members
  */
 router.get("/", authorize("MANAGER"), ctrl.getAll);
 
@@ -23,9 +22,8 @@ router.get("/", authorize("MANAGER"), ctrl.getAll);
  * @swagger
  * /staff/{id}:
  *   get:
- *     tags:
- *       - Staff
- *     summary: Get a specific staff member by ID
+ *     tags: [Staff]
+ *     summary: Get a staff member by ID
  *     security:
  *       - BearerAuth: []
  *     parameters:
@@ -33,20 +31,21 @@ router.get("/", authorize("MANAGER"), ctrl.getAll);
  *         in: path
  *         required: true
  *         schema:
- *           type: string
+ *           type: integer
  *     responses:
  *       200:
- *         description: Staff member data
+ *         description: Staff data
+ *       404:
+ *         description: Staff not found
  */
 router.get("/:id", authorize("MANAGER"), ctrl.getOne);
 
 /**
  * @swagger
- * /staff/:
+ * /staff:
  *   post:
- *     tags:
- *       - Staff
- *     summary: Create a new staff member
+ *     tags: [Staff]
+ *     summary: Create a staff member
  *     security:
  *       - BearerAuth: []
  *     requestBody:
@@ -55,18 +54,20 @@ router.get("/:id", authorize("MANAGER"), ctrl.getOne);
  *         application/json:
  *           schema:
  *             type: object
+ *             required: [fullName, email, password, role]
  *             properties:
+ *               fullName:
+ *                 type: string
  *               email:
  *                 type: string
- *               name:
+ *               password:
  *                 type: string
  *               role:
  *                 type: string
- *               departmentId:
- *                 type: string
+ *                 enum: [PROFESSOR, ASSISTANT, MANAGER]
  *     responses:
  *       201:
- *         description: Created staff member
+ *         description: Staff created
  */
 router.post("/", authorize("MANAGER"), ctrl.create);
 
@@ -74,9 +75,8 @@ router.post("/", authorize("MANAGER"), ctrl.create);
  * @swagger
  * /staff/{id}:
  *   put:
- *     tags:
- *       - Staff
- *     summary: Update a staff member
+ *     tags: [Staff]
+ *     summary: Update a staff member role
  *     security:
  *       - BearerAuth: []
  *     parameters:
@@ -84,16 +84,21 @@ router.post("/", authorize("MANAGER"), ctrl.create);
  *         in: path
  *         required: true
  *         schema:
- *           type: string
+ *           type: integer
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
+ *             required: [role]
+ *             properties:
+ *               role:
+ *                 type: string
+ *                 enum: [PROFESSOR, ASSISTANT, MANAGER]
  *     responses:
  *       200:
- *         description: Updated staff member
+ *         description: Staff updated
  */
 router.put("/:id", authorize("MANAGER"), ctrl.update);
 
@@ -101,8 +106,7 @@ router.put("/:id", authorize("MANAGER"), ctrl.update);
  * @swagger
  * /staff/{id}:
  *   delete:
- *     tags:
- *       - Staff
+ *     tags: [Staff]
  *     summary: Delete a staff member
  *     security:
  *       - BearerAuth: []
@@ -111,10 +115,10 @@ router.put("/:id", authorize("MANAGER"), ctrl.update);
  *         in: path
  *         required: true
  *         schema:
- *           type: string
+ *           type: integer
  *     responses:
  *       200:
- *         description: Deletion confirmation
+ *         description: Staff deleted
  */
 router.delete("/:id", authorize("MANAGER"), ctrl.remove);
 

@@ -6,28 +6,56 @@ router.use(authenticate);
 
 /**
  * @swagger
- * /rooms/:
+ * /rooms:
  *   get:
- *     tags:
- *       - Rooms
+ *     tags: [Rooms]
  *     summary: Get all rooms
  *     security:
  *       - BearerAuth: []
  *     responses:
  *       200:
- *         description: List of all rooms
+ *         description: List of rooms
  */
 router.get("/", ctrl.getAll);
 
 /**
  * @swagger
- * /rooms/:
+ * /rooms:
  *   post:
- *     tags:
- *       - Rooms
- *     summary: Create a new room
+ *     tags: [Rooms]
+ *     summary: Create a room
  *     security:
  *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [name]
+ *             properties:
+ *               name:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Room created
+ */
+router.post("/", authorize("MANAGER"), ctrl.create);
+
+/**
+ * @swagger
+ * /rooms/{id}:
+ *   put:
+ *     tags: [Rooms]
+ *     summary: Update a room
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: integer
  *     requestBody:
  *       required: true
  *       content:
@@ -37,40 +65,9 @@ router.get("/", ctrl.getAll);
  *             properties:
  *               name:
  *                 type: string
- *               building:
- *                 type: string
- *               capacity:
- *                 type: number
- *     responses:
- *       201:
- *         description: Created room
- */
-router.post("/", authorize("MANAGER"), ctrl.create);
-
-/**
- * @swagger
- * /rooms/{id}:
- *   put:
- *     tags:
- *       - Rooms
- *     summary: Update a room
- *     security:
- *       - BearerAuth: []
- *     parameters:
- *       - name: id
- *         in: path
- *         required: true
- *         schema:
- *           type: string
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
  *     responses:
  *       200:
- *         description: Updated room
+ *         description: Room updated
  */
 router.put("/:id", authorize("MANAGER"), ctrl.update);
 
@@ -78,8 +75,7 @@ router.put("/:id", authorize("MANAGER"), ctrl.update);
  * @swagger
  * /rooms/{id}:
  *   delete:
- *     tags:
- *       - Rooms
+ *     tags: [Rooms]
  *     summary: Delete a room
  *     security:
  *       - BearerAuth: []
@@ -88,10 +84,10 @@ router.put("/:id", authorize("MANAGER"), ctrl.update);
  *         in: path
  *         required: true
  *         schema:
- *           type: string
+ *           type: integer
  *     responses:
  *       200:
- *         description: Deletion confirmation
+ *         description: Room deleted
  */
 router.delete("/:id", authorize("MANAGER"), ctrl.remove);
 
