@@ -13,6 +13,7 @@ const PUBLIC_API_URL =
   (process.env.NODE_ENV === "production"
     ? `https://attendobackend-production.up.railway.app/api`
     : `http://localhost:${PORT}/api`);
+const LOCAL_API_URL = `http://localhost:${PORT}/api`;
 const ALLOWED_ORIGINS = [
   process.env.FRONTEND_URL,
   process.env.SWAGGER_URL,
@@ -126,7 +127,10 @@ app.listen(PORT, "0.0.0.0", () => {
     emailHealth = {
       checkedAt: new Date().toISOString(),
       healthy: false,
-      message: err?.message || "SMTP authentication failed",
+      message:
+        err?.code === "ETIMEDOUT"
+          ? "Connection timeout while checking SMTP"
+          : err?.message || "SMTP authentication failed",
       details: {
         code: err?.code,
         response: err?.response,
@@ -337,6 +341,10 @@ const options = {
         url: PUBLIC_API_URL,
         description:
           process.env.NODE_ENV === "production" ? "Production" : "Local",
+      },
+      {
+        url: LOCAL_API_URL,
+        description: "Local development",
       },
     ],
   },
