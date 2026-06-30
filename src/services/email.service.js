@@ -1,32 +1,30 @@
 const nodemailer = require("nodemailer");
 
-// إعداد الـ transporter اللي بيبعت الإيميل (يفضل استخدام Gmail App Password)
+const smtpPort = Number(process.env.EMAIL_PORT || 587);
 const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST || "smtp.gmail.com",
-  port: process.env.EMAIL_PORT || 587,
-  secure: false, // true for 465, false for other ports
+  port: smtpPort,
+  secure: Number(process.env.EMAIL_SECURE) === 1 || smtpPort === 465,
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
+  connectionTimeout: Number(process.env.EMAIL_CONNECTION_TIMEOUT_MS || 15000),
+  greetingTimeout: Number(process.env.EMAIL_GREETING_TIMEOUT_MS || 15000),
+  socketTimeout: Number(process.env.EMAIL_SOCKET_TIMEOUT_MS || 15000),
   tls: {
-    rejectUnauthorized: false, // Allow self-signed certificates
+    rejectUnauthorized: false,
   },
 });
 
-/**
- * بيبعت OTP على إيميل المستخدم
- * @param {string} to - الإيميل اللي هيتبعت له
- * @param {string} otp - الكود المكون من 6 أرقام
- */
 async function sendOTPEmail(to, otp) {
   const mailOptions = {
-    from: process.env.EMAIL_FROM || "Attendo <no-reply@attendo.com>",
+    from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
     to,
     subject: "Attendo - Email Verification Code",
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 400px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
-        <h2 style="color: #4F46E5;">Attendo 🎓</h2>
+        <h2 style="color: #4F46E5;">Attendo 📚</h2>
         <p>Your verification code is:</p>
         <h1 style="letter-spacing: 8px; color: #4F46E5;">${otp}</h1>
         <p>This code expires in <strong>${process.env.OTP_EXPIRES_MINUTES || 10} minutes</strong>.</p>
@@ -40,17 +38,25 @@ async function sendOTPEmail(to, otp) {
     console.log(`[SUCCESS] OTP email sent to: ${to}`);
   } catch (error) {
     console.error(`[ERROR] Failed to send email to ${to}:`, error.message);
+    console.error("[ERROR] SMTP details:", {
+      host: process.env.EMAIL_HOST || "smtp.gmail.com",
+      port: smtpPort,
+      secure: Number(process.env.EMAIL_SECURE) === 1 || smtpPort === 465,
+      user: process.env.EMAIL_USER,
+      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+      code: error?.code,
+      response: error?.response,
+      responseCode: error?.responseCode,
+    });
     console.log("=============================================");
     console.log(
-      "يرجى التأكد من إعدادات الإيميل في ملف .env (تأكد أنك تستخدم App Password)",
+      "Please verify the email settings in .env and confirm you are using a Gmail App Password.",
     );
-    console.log(`للضرورة، الـ OTP الخاص بـ ${to} هو: ${otp}`);
+    console.log(`For debugging, the OTP for ${to} is: ${otp}`);
     console.log("=============================================");
-    // Allow testing even if email fails in development mode
     if (process.env.NODE_ENV === "production") {
       throw new Error("Failed to send email");
     }
-    // In development, log but don't fail - OTP is logged in console for testing
     console.log(`[DEV MODE] Continuing without sending email. OTP is: ${otp}`);
   }
 }
