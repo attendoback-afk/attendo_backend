@@ -39,16 +39,32 @@ app.options("*", cors(corsOptions));
 app.use(express.json());
 
 // ─── Routes ───────────────────────────────────────────────────
-app.use("/api/auth", require("./routes/auth.routes"));
-app.use("/api/students", require("./routes/student.routes"));
-app.use("/api/staff", require("./routes/staff.routes"));
-app.use("/api/departments", require("./routes/department.routes"));
-app.use("/api/classes", require("./routes/class.routes"));
-app.use("/api/modules", require("./routes/module.routes"));
-app.use("/api/rooms", require("./routes/room.routes"));
-app.use("/api/sessions", require("./routes/session.routes"));
-app.use("/api/attendance", require("./routes/attendance.routes"));
-app.use("/api/live", require("./routes/liveAttendance.routes"));
+const routeDefinitions = [
+  ["/api/auth", "./routes/auth.routes"],
+  ["/api/students", "./routes/student.routes"],
+  ["/api/staff", "./routes/staff.routes"],
+  ["/api/departments", "./routes/department.routes"],
+  ["/api/classes", "./routes/class.routes"],
+  ["/api/modules", "./routes/module.routes"],
+  ["/api/rooms", "./routes/room.routes"],
+  ["/api/sessions", "./routes/session.routes"],
+  ["/api/attendance", "./routes/attendance.routes"],
+  ["/api/live", "./routes/liveAttendance.routes"],
+];
+
+let loadedRoutes = 0;
+for (const [mountPath, routeModule] of routeDefinitions) {
+  try {
+    app.use(mountPath, require(routeModule));
+    loadedRoutes++;
+  } catch (err) {
+    console.error(
+      `[Routes] Failed to load route "${mountPath}" from "${routeModule}":`,
+      err.message
+    );
+  }
+}
+console.log(`[Routes] ${loadedRoutes}/${routeDefinitions.length} route modules loaded successfully`);
 
 // ─── Health Check ─────────────────────────────────────────────
 app.get("/", (req, res) => res.json({ message: "Attendo API is running 🎓" }));
@@ -67,7 +83,10 @@ app.use((err, req, res, next) => {
   res.status(500).json({ success: false, message: "Something went wrong!" });
 });
 
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+  console.log(`[Startup] Server is ready and accepting connections on port ${PORT}`);
+});
 
 const options = {
   definition: {
