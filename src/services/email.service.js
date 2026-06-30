@@ -1,10 +1,12 @@
 const nodemailer = require("nodemailer");
 
 const smtpPort = Number(process.env.EMAIL_PORT || 587);
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST || "smtp.gmail.com",
-  port: smtpPort,
-  secure: Number(process.env.EMAIL_SECURE) === 1 || smtpPort === 465,
+const smtpSecure =
+  process.env.EMAIL_SECURE !== undefined
+    ? process.env.EMAIL_SECURE === "1" || process.env.EMAIL_SECURE === "true"
+    : smtpPort === 465;
+
+const baseTransportOptions = {
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
@@ -12,10 +14,30 @@ const transporter = nodemailer.createTransport({
   connectionTimeout: Number(process.env.EMAIL_CONNECTION_TIMEOUT_MS || 15000),
   greetingTimeout: Number(process.env.EMAIL_GREETING_TIMEOUT_MS || 15000),
   socketTimeout: Number(process.env.EMAIL_SOCKET_TIMEOUT_MS || 15000),
-  tls: {
-    rejectUnauthorized: false,
-  },
-});
+};
+
+const transporter =
+  (process.env.EMAIL_SERVICE || "gmail").toLowerCase() === "gmail"
+    ? nodemailer.createTransport({
+        service: "gmail",
+        secure: smtpSecure,
+        auth: baseTransportOptions.auth,
+        connectionTimeout: baseTransportOptions.connectionTimeout,
+        greetingTimeout: baseTransportOptions.greetingTimeout,
+        socketTimeout: baseTransportOptions.socketTimeout,
+        tls: {
+          rejectUnauthorized: false,
+        },
+      })
+    : nodemailer.createTransport({
+        host: process.env.EMAIL_HOST || "smtp.gmail.com",
+        port: smtpPort,
+        secure: smtpSecure,
+        ...baseTransportOptions,
+        tls: {
+          rejectUnauthorized: false,
+        },
+      });
 
 async function sendOTPEmail(to, otp) {
   const mailOptions = {
@@ -39,9 +61,10 @@ async function sendOTPEmail(to, otp) {
   } catch (error) {
     console.error(`[ERROR] Failed to send email to ${to}:`, error.message);
     console.error("[ERROR] SMTP details:", {
+      service: (process.env.EMAIL_SERVICE || "gmail").toLowerCase(),
       host: process.env.EMAIL_HOST || "smtp.gmail.com",
       port: smtpPort,
-      secure: Number(process.env.EMAIL_SECURE) === 1 || smtpPort === 465,
+      secure: smtpSecure,
       user: process.env.EMAIL_USER,
       from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
       code: error?.code,
@@ -65,9 +88,10 @@ async function verifyEmailTransport() {
   await transporter.verify();
   return {
     success: true,
+    service: (process.env.EMAIL_SERVICE || "gmail").toLowerCase(),
     host: process.env.EMAIL_HOST || "smtp.gmail.com",
     port: smtpPort,
-    secure: Number(process.env.EMAIL_SECURE) === 1 || smtpPort === 465,
+    secure: smtpSecure,
     user: process.env.EMAIL_USER,
   };
 }
