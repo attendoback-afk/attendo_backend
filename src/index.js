@@ -20,6 +20,7 @@ const ALLOWED_ORIGINS = [
   "http://localhost:3001",
   "http://127.0.0.1:3000",
   "http://127.0.0.1:3001",
+  `https://attendobackend-production.up.railway.app`,
 ].filter(Boolean);
 
 const corsOptions = {
@@ -61,7 +62,7 @@ for (const [mountPath, routeModule] of routeDefinitions) {
   } catch (err) {
     console.error(
       `[Routes] Failed to load route "${mountPath}" from "${routeModule}":`,
-    err.message,
+      err.message,
     );
   }
 }
