@@ -5,6 +5,7 @@ const path = require("path");
 const app = express();
 const swaggerUi = require("swagger-ui-express");
 const swaggerJsdoc = require("swagger-jsdoc");
+const { verifyEmailTransport } = require("./services/email.service");
 
 const PORT = process.env.PORT || 3000;
 const PUBLIC_API_URL =
@@ -22,6 +23,13 @@ const ALLOWED_ORIGINS = [
   "http://127.0.0.1:3001",
   `https://attendobackend-production.up.railway.app`,
 ].filter(Boolean);
+
+let emailHealth = {
+  checkedAt: null,
+  healthy: null,
+  message: "not checked yet",
+  details: null,
+};
 
 const corsOptions = {
   origin(origin, callback) {
@@ -81,6 +89,16 @@ app.get("/health", (req, res) => {
   });
 });
 
+app.get("/health/email", (req, res) => {
+  const statusCode = emailHealth.healthy === true ? 200 : emailHealth.healthy === false ? 503 : 202;
+  res.status(statusCode).json({
+    success: emailHealth.healthy === true,
+    message: emailHealth.message,
+    checkedAt: emailHealth.checkedAt,
+    details: emailHealth.details,
+  });
+});
+
 // ─── Global Error Handler ──────────────────────────────────────
 app.use((err, req, res, next) => {
   console.error(err.stack);
@@ -93,6 +111,31 @@ app.listen(PORT, "0.0.0.0", () => {
     `[Startup] Server is ready and accepting connections on port ${PORT}`,
   );
 });
+
+(async () => {
+  try {
+    const result = await verifyEmailTransport();
+    emailHealth = {
+      checkedAt: new Date().toISOString(),
+      healthy: true,
+      message: "SMTP authentication verified",
+      details: result,
+    };
+    console.log("[Email Health] SMTP authentication verified");
+  } catch (err) {
+    emailHealth = {
+      checkedAt: new Date().toISOString(),
+      healthy: false,
+      message: err?.message || "SMTP authentication failed",
+      details: {
+        code: err?.code,
+        response: err?.response,
+        responseCode: err?.responseCode,
+      },
+    };
+    console.error("[Email Health] SMTP verification failed:", err?.message || err);
+  }
+})();
 
 const options = {
   definition: {

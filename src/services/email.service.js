@@ -61,4 +61,15 @@ async function sendOTPEmail(to, otp) {
   }
 }
 
-module.exports = { sendOTPEmail };
+async function verifyEmailTransport() {
+  await transporter.verify();
+  return {
+    success: true,
+    host: process.env.EMAIL_HOST || "smtp.gmail.com",
+    port: smtpPort,
+    secure: Number(process.env.EMAIL_SECURE) === 1 || smtpPort === 465,
+    user: process.env.EMAIL_USER,
+  };
+}
+
+module.exports = { sendOTPEmail, verifyEmailTransport };
