@@ -535,7 +535,7 @@ async function sendEmailTest(req, res) {
     console.error("SendEmailTest Error:", err);
     return res.status(500).json({
       success: false,
-      message: "Failed to send test email",
+      message: err?.message || "Failed to send test email",
     });
   }
 }

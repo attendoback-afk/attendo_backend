@@ -1,7 +1,10 @@
 const { Resend } = require("resend");
 
 const resendApiKey = process.env.RESEND_API_KEY;
-const resendFrom = process.env.RESEND_FROM || process.env.EMAIL_FROM || "Attendo <onboarding@resend.dev>";
+const resendFrom =
+  process.env.RESEND_FROM ||
+  process.env.EMAIL_FROM ||
+  "Attendo <onboarding@resend.dev>";
 const resend = resendApiKey ? new Resend(resendApiKey) : null;
 
 function buildHtmlBody({ title, intro, otp }) {
