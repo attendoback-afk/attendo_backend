@@ -1,43 +1,8 @@
-const nodemailer = require("nodemailer");
+const { Resend } = require("resend");
 
-const smtpPort = Number(process.env.EMAIL_PORT || 587);
-const smtpSecure =
-  process.env.EMAIL_SECURE !== undefined
-    ? process.env.EMAIL_SECURE === "1" || process.env.EMAIL_SECURE === "true"
-    : smtpPort === 465;
-
-const baseTransportOptions = {
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-  connectionTimeout: Number(process.env.EMAIL_CONNECTION_TIMEOUT_MS || 15000),
-  greetingTimeout: Number(process.env.EMAIL_GREETING_TIMEOUT_MS || 15000),
-  socketTimeout: Number(process.env.EMAIL_SOCKET_TIMEOUT_MS || 15000),
-};
-
-const transporter =
-  (process.env.EMAIL_SERVICE || "gmail").toLowerCase() === "gmail"
-    ? nodemailer.createTransport({
-        service: "gmail",
-        secure: smtpSecure,
-        auth: baseTransportOptions.auth,
-        connectionTimeout: baseTransportOptions.connectionTimeout,
-        greetingTimeout: baseTransportOptions.greetingTimeout,
-        socketTimeout: baseTransportOptions.socketTimeout,
-        tls: {
-          rejectUnauthorized: false,
-        },
-      })
-    : nodemailer.createTransport({
-        host: process.env.EMAIL_HOST || "smtp.gmail.com",
-        port: smtpPort,
-        secure: smtpSecure,
-        ...baseTransportOptions,
-        tls: {
-          rejectUnauthorized: false,
-        },
-      });
+const resendApiKey = process.env.RESEND_API_KEY;
+const resendFrom = process.env.RESEND_FROM || process.env.EMAIL_FROM || "Attendo <onboarding@resend.dev>";
+const resend = resendApiKey ? new Resend(resendApiKey) : null;
 
 function buildHtmlBody({ title, intro, otp }) {
   return `
@@ -51,36 +16,42 @@ function buildHtmlBody({ title, intro, otp }) {
   `;
 }
 
-async function sendTemplatedEmail({ to, otp, subject, title, intro }) {
-  const mailOptions = {
-    from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+async function sendResendEmail({ to, otp, subject, title, intro }) {
+  if (!resend) {
+    throw new Error("RESEND_API_KEY is missing");
+  }
+
+  const { error } = await resend.emails.send({
+    from: resendFrom,
     to,
     subject,
     html: buildHtmlBody({ title, intro, otp }),
-  };
+  });
 
+  if (error) {
+    throw error;
+  }
+}
+
+async function sendOTPEmail(to, otp) {
   try {
-    await transporter.sendMail(mailOptions);
-    console.log(`[SUCCESS] Email sent to: ${to}`);
+    await sendResendEmail({
+      to,
+      otp,
+      subject: "Attendo - Email Verification Code",
+      title: "Attendo 📚",
+      intro: "Your verification code is:",
+    });
+    console.log(`[SUCCESS] OTP email sent to: ${to}`);
   } catch (error) {
     console.error(`[ERROR] Failed to send email to ${to}:`, error.message);
-    console.error("[ERROR] SMTP details:", {
-      service: (process.env.EMAIL_SERVICE || "gmail").toLowerCase(),
-      host: process.env.EMAIL_HOST || "smtp.gmail.com",
-      port: smtpPort,
-      secure: smtpSecure,
-      user: process.env.EMAIL_USER,
-      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+    console.error("[ERROR] Resend details:", {
+      from: resendFrom,
+      hasApiKey: Boolean(resendApiKey),
       code: error?.code,
-      response: error?.response,
-      responseCode: error?.responseCode,
+      name: error?.name,
+      details: error?.message,
     });
-    console.log("=============================================");
-    console.log(
-      "Please verify the email settings in .env and confirm you are using a Gmail App Password.",
-    );
-    console.log(`For debugging, the OTP for ${to} is: ${otp}`);
-    console.log("=============================================");
     if (process.env.NODE_ENV === "production") {
       throw new Error("Failed to send email");
     }
@@ -88,40 +59,66 @@ async function sendTemplatedEmail({ to, otp, subject, title, intro }) {
   }
 }
 
-async function sendOTPEmail(to, otp) {
-  return sendTemplatedEmail({
-    to,
-    otp,
-    subject: "Attendo - Email Verification Code",
-    title: "Attendo 📚",
-    intro: "Your verification code is:",
-  });
+async function sendPasswordResetEmail(to, otp) {
+  try {
+    await sendResendEmail({
+      to,
+      otp,
+      subject: "Attendo - Password Reset Code",
+      title: "Attendo 🔐",
+      intro: "Your password reset code is:",
+    });
+    console.log(`[SUCCESS] Password reset email sent to: ${to}`);
+  } catch (error) {
+    console.error(`[ERROR] Failed to send password reset email to ${to}:`, error.message);
+    console.error("[ERROR] Resend details:", {
+      from: resendFrom,
+      hasApiKey: Boolean(resendApiKey),
+      code: error?.code,
+      name: error?.name,
+      details: error?.message,
+    });
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("Failed to send email");
+    }
+    console.log(`[DEV MODE] Continuing without sending email. OTP is: ${otp}`);
+  }
 }
 
-async function sendPasswordResetEmail(to, otp) {
-  return sendTemplatedEmail({
+async function sendTestEmail({ to, subject, html, text }) {
+  if (!resend) {
+    throw new Error("RESEND_API_KEY is missing");
+  }
+
+  const { error } = await resend.emails.send({
+    from: resendFrom,
     to,
-    otp,
-    subject: "Attendo - Password Reset Code",
-    title: "Attendo 🔐",
-    intro: "Your password reset code is:",
+    subject,
+    html,
+    text,
   });
+
+  if (error) {
+    throw error;
+  }
 }
 
 async function verifyEmailTransport() {
-  await transporter.verify();
+  if (!resend) {
+    throw new Error("RESEND_API_KEY is missing");
+  }
+
   return {
     success: true,
-    service: (process.env.EMAIL_SERVICE || "gmail").toLowerCase(),
-    host: process.env.EMAIL_HOST || "smtp.gmail.com",
-    port: smtpPort,
-    secure: smtpSecure,
-    user: process.env.EMAIL_USER,
+    provider: "resend",
+    from: resendFrom,
+    hasApiKey: Boolean(resendApiKey),
   };
 }
 
 module.exports = {
   sendOTPEmail,
   sendPasswordResetEmail,
+  sendTestEmail,
   verifyEmailTransport,
 };

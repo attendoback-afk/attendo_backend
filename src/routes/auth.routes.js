@@ -6,10 +6,11 @@ const {
   forgotPassword,
   verifyPasswordResetOTP,
   resetPassword,
+  sendEmailTest,
   login,
   getMe,
 } = require("../controllers/auth.controller");
-const { authenticate } = require("../middleware/auth.middleware");
+const { authenticate, authorize } = require("../middleware/auth.middleware");
 
 /**
  * @swagger
@@ -176,6 +177,34 @@ router.post("/verify-password-reset-otp", verifyPasswordResetOTP);
  *         description: Password updated successfully
  */
 router.post("/reset-password", resetPassword);
+
+/**
+ * @swagger
+ * /auth/test-email:
+ *   post:
+ *     tags:
+ *       - Auth
+ *     summary: Send a one-off test email using the production mail provider
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               to:
+ *                 type: string
+ *               subject:
+ *                 type: string
+ *               message:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Test email sent successfully
+ */
+router.post("/test-email", authenticate, authorize("MANAGER"), sendEmailTest);
 
 /**
  * @swagger

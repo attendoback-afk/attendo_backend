@@ -119,25 +119,25 @@ app.listen(PORT, "0.0.0.0", () => {
     emailHealth = {
       checkedAt: new Date().toISOString(),
       healthy: true,
-      message: "SMTP authentication verified",
+      message: "Email provider verification succeeded",
       details: result,
     };
-    console.log("[Email Health] SMTP authentication verified");
+    console.log("[Email Health] Email provider verification succeeded");
   } catch (err) {
     emailHealth = {
       checkedAt: new Date().toISOString(),
       healthy: false,
       message:
         err?.code === "ETIMEDOUT"
-          ? "Connection timeout while checking SMTP"
-          : err?.message || "SMTP authentication failed",
+          ? "Connection timeout while checking email provider"
+          : err?.message || "Email provider verification failed",
       details: {
         code: err?.code,
         response: err?.response,
         responseCode: err?.responseCode,
       },
     };
-    console.error("[Email Health] SMTP verification failed:", err?.message || err);
+    console.error("[Email Health] Email provider verification failed:", err?.message || err);
   }
 })();
 

@@ -4,6 +4,7 @@ const prisma = require("../utils/prisma");
 const {
   sendOTPEmail,
   sendPasswordResetEmail,
+  sendTestEmail,
 } = require("../services/email.service");
 
 function generateOTP() {
@@ -25,10 +26,6 @@ function getRoleName(rawRole) {
 
 function normalizeEmail(rawEmail) {
   return typeof rawEmail === "string" ? rawEmail.trim().toLowerCase() : rawEmail;
-}
-
-function generateTempPassword() {
-  return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
 async function createPendingVerification(email) {
@@ -509,6 +506,40 @@ async function resetPassword(req, res) {
   }
 }
 
+async function sendEmailTest(req, res) {
+  try {
+    const to = normalizeEmail(req.body?.to || req.user?.email);
+    const subject = req.body?.subject || "Attendo test email";
+    const message = req.body?.message || "This is a one-off test email from Attendo.";
+
+    if (!to) {
+      return res.status(400).json({
+        success: false,
+        message: "to is required",
+      });
+    }
+
+    await sendTestEmail({
+      to,
+      subject,
+      html: `<div style="font-family: Arial, sans-serif;"><h2>Attendo Test</h2><p>${message}</p></div>`,
+      text: message,
+    });
+
+    return res.json({
+      success: true,
+      message: "Test email sent successfully",
+      to,
+    });
+  } catch (err) {
+    console.error("SendEmailTest Error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to send test email",
+    });
+  }
+}
+
 module.exports = {
   register,
   verifyOTP,
@@ -516,6 +547,7 @@ module.exports = {
   forgotPassword,
   verifyPasswordResetOTP,
   resetPassword,
+  sendEmailTest,
   login,
   getMe,
 };
