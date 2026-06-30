@@ -30,6 +30,14 @@ model EmailVerification {
   expiresAt DateTime
 }
 
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  otp       String
+  email     String   @unique
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+}
+
 model Role {
   id   Int    @id @default(autoincrement())
   name String @unique

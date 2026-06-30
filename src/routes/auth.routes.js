@@ -3,6 +3,9 @@ const {
   register,
   verifyOTP,
   resendOTP,
+  forgotPassword,
+  verifyPasswordResetOTP,
+  resetPassword,
   login,
   getMe,
 } = require("../controllers/auth.controller");
@@ -92,6 +95,87 @@ router.post("/verify-otp", verifyOTP);
  *         description: OTP resent successfully
  */
 router.post("/resend-otp", resendOTP);
+
+/**
+ * @swagger
+ * /auth/forgot-password:
+ *   post:
+ *     tags:
+ *       - Auth
+ *     summary: Request a password reset OTP
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Password reset code sent successfully
+ */
+router.post("/forgot-password", forgotPassword);
+
+/**
+ * @swagger
+ * /auth/verify-password-reset-otp:
+ *   post:
+ *     tags:
+ *       - Auth
+ *     summary: Verify password reset OTP
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - otp
+ *             properties:
+ *               email:
+ *                 type: string
+ *               otp:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Reset code verified successfully
+ */
+router.post("/verify-password-reset-otp", verifyPasswordResetOTP);
+
+/**
+ * @swagger
+ * /auth/reset-password:
+ *   post:
+ *     tags:
+ *       - Auth
+ *     summary: Reset the account password after OTP verification
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - otp
+ *               - newPassword
+ *             properties:
+ *               email:
+ *                 type: string
+ *               otp:
+ *                 type: string
+ *               newPassword:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Password updated successfully
+ */
+router.post("/reset-password", resetPassword);
 
 /**
  * @swagger

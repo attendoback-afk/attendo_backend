@@ -39,25 +39,29 @@ const transporter =
         },
       });
 
-async function sendOTPEmail(to, otp) {
+function buildHtmlBody({ title, intro, otp }) {
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 400px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+      <h2 style="color: #4F46E5;">${title}</h2>
+      <p>${intro}</p>
+      <h1 style="letter-spacing: 8px; color: #4F46E5;">${otp}</h1>
+      <p>This code expires in <strong>${process.env.OTP_EXPIRES_MINUTES || 10} minutes</strong>.</p>
+      <p style="color: #999; font-size: 12px;">If you didn't request this, ignore this email.</p>
+    </div>
+  `;
+}
+
+async function sendTemplatedEmail({ to, otp, subject, title, intro }) {
   const mailOptions = {
     from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
     to,
-    subject: "Attendo - Email Verification Code",
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 400px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
-        <h2 style="color: #4F46E5;">Attendo 📚</h2>
-        <p>Your verification code is:</p>
-        <h1 style="letter-spacing: 8px; color: #4F46E5;">${otp}</h1>
-        <p>This code expires in <strong>${process.env.OTP_EXPIRES_MINUTES || 10} minutes</strong>.</p>
-        <p style="color: #999; font-size: 12px;">If you didn't request this, ignore this email.</p>
-      </div>
-    `,
+    subject,
+    html: buildHtmlBody({ title, intro, otp }),
   };
 
   try {
     await transporter.sendMail(mailOptions);
-    console.log(`[SUCCESS] OTP email sent to: ${to}`);
+    console.log(`[SUCCESS] Email sent to: ${to}`);
   } catch (error) {
     console.error(`[ERROR] Failed to send email to ${to}:`, error.message);
     console.error("[ERROR] SMTP details:", {
@@ -84,6 +88,26 @@ async function sendOTPEmail(to, otp) {
   }
 }
 
+async function sendOTPEmail(to, otp) {
+  return sendTemplatedEmail({
+    to,
+    otp,
+    subject: "Attendo - Email Verification Code",
+    title: "Attendo 📚",
+    intro: "Your verification code is:",
+  });
+}
+
+async function sendPasswordResetEmail(to, otp) {
+  return sendTemplatedEmail({
+    to,
+    otp,
+    subject: "Attendo - Password Reset Code",
+    title: "Attendo 🔐",
+    intro: "Your password reset code is:",
+  });
+}
+
 async function verifyEmailTransport() {
   await transporter.verify();
   return {
@@ -96,4 +120,8 @@ async function verifyEmailTransport() {
   };
 }
 
-module.exports = { sendOTPEmail, verifyEmailTransport };
+module.exports = {
+  sendOTPEmail,
+  sendPasswordResetEmail,
+  verifyEmailTransport,
+};

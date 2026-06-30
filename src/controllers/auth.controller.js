@@ -1,7 +1,10 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const prisma = require("../utils/prisma");
-const { sendOTPEmail } = require("../services/email.service");
+const {
+  sendOTPEmail,
+  sendPasswordResetEmail,
+} = require("../services/email.service");
 
 function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -22,6 +25,10 @@ function getRoleName(rawRole) {
 
 function normalizeEmail(rawEmail) {
   return typeof rawEmail === "string" ? rawEmail.trim().toLowerCase() : rawEmail;
+}
+
+function generateTempPassword() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
 async function createPendingVerification(email) {
@@ -46,6 +53,32 @@ async function createPendingVerification(email) {
   // Don't block registration on SMTP latency or outages.
   void sendOTPEmail(normalizedEmail, otp).catch((err) => {
     console.error("OTP email dispatch failed:", err?.message || err);
+  });
+
+  return { otp, expiresAt };
+}
+
+async function createPasswordResetToken(email) {
+  const normalizedEmail = normalizeEmail(email);
+  const otp = generateOTP();
+  const expiresInMinutes = Number(process.env.PASSWORD_RESET_EXPIRES_MINUTES || 10);
+  const expiresAt = new Date(Date.now() + expiresInMinutes * 60 * 1000);
+
+  await prisma.passwordResetToken.upsert({
+    where: { email: normalizedEmail },
+    update: {
+      otp,
+      expiresAt,
+    },
+    create: {
+      email: normalizedEmail,
+      otp,
+      expiresAt,
+    },
+  });
+
+  void sendPasswordResetEmail(normalizedEmail, otp).catch((err) => {
+    console.error("Password reset email dispatch failed:", err?.message || err);
   });
 
   return { otp, expiresAt };
@@ -326,10 +359,163 @@ async function resendOTP(req, res) {
   }
 }
 
+async function forgotPassword(req, res) {
+  try {
+    const { email } = req.body;
+    const normalizedEmail = normalizeEmail(email);
+
+    if (!normalizedEmail) {
+      return res.status(400).json({
+        success: false,
+        message: "email is required",
+      });
+    }
+
+    const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    await createPasswordResetToken(normalizedEmail);
+
+    return res.json({
+      success: true,
+      message: "Password reset code sent to email",
+    });
+  } catch (err) {
+    console.error("ForgotPassword Error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to start password reset",
+    });
+  }
+}
+
+async function verifyPasswordResetOTP(req, res) {
+  try {
+    const { email, otp } = req.body;
+    const normalizedEmail = normalizeEmail(email);
+
+    if (!normalizedEmail || !otp) {
+      return res.status(400).json({
+        success: false,
+        message: "email and otp are required",
+      });
+    }
+
+    const resetToken = await prisma.passwordResetToken.findUnique({
+      where: { email: normalizedEmail },
+    });
+
+    if (!resetToken) {
+      return res.status(404).json({
+        success: false,
+        message: "Reset code not found. Please request a new one.",
+      });
+    }
+
+    if (resetToken.expiresAt < new Date()) {
+      return res.status(400).json({
+        success: false,
+        message: "Reset code expired",
+      });
+    }
+
+    if (resetToken.otp !== String(otp)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid reset code",
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: "Reset code verified successfully",
+    });
+  } catch (err) {
+    console.error("VerifyPasswordResetOTP Error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to verify reset code",
+    });
+  }
+}
+
+async function resetPassword(req, res) {
+  try {
+    const { email, otp, newPassword } = req.body;
+    const normalizedEmail = normalizeEmail(email);
+
+    if (!normalizedEmail || !otp || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "email, otp, and newPassword are required",
+      });
+    }
+
+    if (typeof newPassword !== "string" || newPassword.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: "newPassword must be at least 8 characters",
+      });
+    }
+
+    const resetToken = await prisma.passwordResetToken.findUnique({
+      where: { email: normalizedEmail },
+    });
+
+    if (!resetToken) {
+      return res.status(404).json({
+        success: false,
+        message: "Reset code not found. Please request a new one.",
+      });
+    }
+
+    if (resetToken.expiresAt < new Date()) {
+      return res.status(400).json({
+        success: false,
+        message: "Reset code expired",
+      });
+    }
+
+    if (resetToken.otp !== String(otp)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid reset code",
+      });
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    await prisma.user.update({
+      where: { email: normalizedEmail },
+      data: { passwordHash },
+    });
+
+    await prisma.passwordResetToken.delete({ where: { email: normalizedEmail } });
+
+    return res.json({
+      success: true,
+      message: "Password updated successfully",
+    });
+  } catch (err) {
+    console.error("ResetPassword Error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to reset password",
+    });
+  }
+}
+
 module.exports = {
   register,
   verifyOTP,
   resendOTP,
+  forgotPassword,
+  verifyPasswordResetOTP,
+  resetPassword,
   login,
   getMe,
 };
