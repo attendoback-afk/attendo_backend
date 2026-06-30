@@ -74,6 +74,15 @@ async function registerEmbedding(req, res) {
       },
     });
 
+    await prisma.student.update({
+      where: {
+        userId: studentId,
+      },
+      data: {
+        faceRegistered: true,
+      },
+    });
+
     return res.json({
       success: true,
       message: "Embedding saved successfully",
@@ -90,7 +99,13 @@ async function registerEmbedding(req, res) {
 
 async function getMyFace(req, res) {
   try {
-    const studentId = req.user.userId;
+    const studentId = Number(req.user.userId);
+    if (!Number.isInteger(studentId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid student id",
+      });
+    }
 
     const student = await prisma.student.findUnique({
       where: {
@@ -100,6 +115,13 @@ async function getMyFace(req, res) {
         images: true,
       },
     });
+
+    if (!student) {
+      return res.status(404).json({
+        success: false,
+        message: "Student not found",
+      });
+    }
 
     const embedding = await prisma.faceEmbedding.findFirst({
       where: {

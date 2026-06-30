@@ -22,6 +22,65 @@ router.get("/", authorize("MANAGER", "PROFESSOR", "ASSISTANT"), ctrl.getAll);
 
 /**
  * @swagger
+ * /students/my-face:
+ *   get:
+ *     tags: [Students]
+ *     summary: Get current student face data
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Student face data
+ */
+router.get("/my-face", authorize("STUDENT"), faceCtrl.getMyFace);
+
+/**
+ * @swagger
+ * /students/register-face:
+ *   post:
+ *     tags: [Students]
+ *     summary: Upload a student face image
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required: [image]
+ *             properties:
+ *               image:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       200:
+ *         description: Face registered
+ */
+router.post("/register-face", authorize("STUDENT"), upload.single("image"), faceCtrl.registerFace);
+
+/**
+ * @swagger
+ * /students/register-embedding:
+ *   post:
+ *     tags: [Students]
+ *     summary: Save a student face embedding
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/FaceEmbeddingRequest'
+ *     responses:
+ *       200:
+ *         description: Embedding saved
+ */
+router.post("/register-embedding", authorize("STUDENT"), faceCtrl.registerEmbedding);
+
+/**
+ * @swagger
  * /students/{id}:
  *   get:
  *     tags: [Students]
@@ -175,40 +234,4 @@ router.get("/:id/attendance", ctrl.getAttendance);
  *       200:
  *         description: Face registered
  */
-router.post("/register-face", authorize("STUDENT"), upload.single("image"), faceCtrl.registerFace);
-
-/**
- * @swagger
- * /students/register-embedding:
- *   post:
- *     tags: [Students]
- *     summary: Save a student face embedding
- *     security:
- *       - BearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/FaceEmbeddingRequest'
- *     responses:
- *       200:
- *         description: Embedding saved
- */
-router.post("/register-embedding", authorize("STUDENT"), faceCtrl.registerEmbedding);
-
-/**
- * @swagger
- * /students/my-face:
- *   get:
- *     tags: [Students]
- *     summary: Get current student face data
- *     security:
- *       - BearerAuth: []
- *     responses:
- *       200:
- *         description: Student face data
- */
-router.get("/my-face", authorize("STUDENT"), faceCtrl.getMyFace);
-
 module.exports = router;

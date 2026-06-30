@@ -5,6 +5,13 @@ const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 const API_URL = process.env.API_URL || "http://localhost:3001/api";
 
+function getOptionalModel(client, modelName) {
+  const model = client[modelName];
+  return model && typeof model.findFirst === "function" && typeof model.deleteMany === "function"
+    ? model
+    : null;
+}
+
 function assert(condition, message) {
   if (!condition) {
     throw new Error(`ASSERTION FAILED: ${message}`);
@@ -382,11 +389,12 @@ async function main() {
     log(7, `✓ AttendanceRecord created (id=${dbRecord.id})`);
 
     // Verify FaceRecognitionLog was written (audit trail)
-    const faceLog = await prisma.faceRecognitionLog
-      .findFirst({
-        where: { attendanceSessionId: sessionId },
-      })
-      .catch(() => null); // table might be named differently
+    const faceRecognitionLog = getOptionalModel(prisma, "faceRecognitionLog");
+    const faceLog = faceRecognitionLog
+      ? await faceRecognitionLog.findFirst({
+          where: { attendanceSessionId: sessionId },
+        }).catch(() => null)
+      : null; // table might not exist in this schema
 
     if (faceLog) {
       log(7, `✓ FaceRecognitionLog entry found (audit trail confirmed)`);
@@ -477,11 +485,14 @@ async function main() {
     console.log("\n[Cleanup] Removing test data...");
 
     if (cleanup.attendanceSessionId) {
-      await prisma.faceRecognitionLog
-        .deleteMany({
-          where: { attendanceSessionId: cleanup.attendanceSessionId },
-        })
-        .catch(() => {});
+      const faceRecognitionLog = getOptionalModel(prisma, "faceRecognitionLog");
+      if (faceRecognitionLog) {
+        await faceRecognitionLog
+          .deleteMany({
+            where: { attendanceSessionId: cleanup.attendanceSessionId },
+          })
+          .catch(() => {});
+      }
       await prisma.attendanceRecord
         .deleteMany({
           where: { attendanceSessionId: cleanup.attendanceSessionId },
