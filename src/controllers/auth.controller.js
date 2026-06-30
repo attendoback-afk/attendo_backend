@@ -20,25 +20,33 @@ function getRoleName(rawRole) {
   return typeof rawRole === "string" ? rawRole.trim().toUpperCase() : null;
 }
 
+function normalizeEmail(rawEmail) {
+  return typeof rawEmail === "string" ? rawEmail.trim().toLowerCase() : rawEmail;
+}
+
 async function createPendingVerification(email) {
+  const normalizedEmail = normalizeEmail(email);
   const otp = generateOTP();
   const expiresInMinutes = Number(process.env.OTP_EXPIRES_MINUTES || 10);
   const expiresAt = new Date(Date.now() + expiresInMinutes * 60 * 1000);
 
   await prisma.emailVerification.upsert({
-    where: { email },
+    where: { email: normalizedEmail },
     update: {
       otp,
       expiresAt,
     },
     create: {
-      email,
+      email: normalizedEmail,
       otp,
       expiresAt,
     },
   });
 
-  await sendOTPEmail(email, otp);
+  // Don't block registration on SMTP latency or outages.
+  void sendOTPEmail(normalizedEmail, otp).catch((err) => {
+    console.error("OTP email dispatch failed:", err?.message || err);
+  });
 
   return { otp, expiresAt };
 }
@@ -77,8 +85,9 @@ async function getMe(req, res) {
 async function login(req, res) {
   try {
     const { email, password } = req.body;
+    const normalizedEmail = normalizeEmail(email);
 
-    if (!email || !password) {
+    if (!normalizedEmail || !password) {
       return res.status(400).json({
         success: false,
         message: "email and password are required",
@@ -86,7 +95,7 @@ async function login(req, res) {
     }
 
     const user = await prisma.user.findUnique({
-      where: { email },
+      where: { email: normalizedEmail },
       include: {
         staff: { include: { role: true } },
         student: {
@@ -151,10 +160,11 @@ async function login(req, res) {
 async function register(req, res) {
   try {
     const { fullName, email, password, name, role } = req.body;
+    const normalizedEmail = normalizeEmail(email);
     const resolvedName = fullName || name;
     const resolvedRole = getRoleName(role);
 
-    if (!resolvedName || !email || !password || !resolvedRole) {
+    if (!resolvedName || !normalizedEmail || !password || !resolvedRole) {
       return res.status(400).json({
         success: false,
         message: "fullName/name, email, password, and role are required",
@@ -168,7 +178,7 @@ async function register(req, res) {
       });
     }
 
-    const existing = await prisma.user.findUnique({ where: { email } });
+    const existing = await prisma.user.findUnique({ where: { email: normalizedEmail } });
     if (existing) {
       return res.status(400).json({
         success: false,
@@ -181,14 +191,14 @@ async function register(req, res) {
     const user = await prisma.user.create({
       data: {
         fullName: resolvedName,
-        email,
+        email: normalizedEmail,
         passwordHash,
         invalid: true,
         role: resolvedRole,
       },
     });
 
-    await createPendingVerification(email);
+    await createPendingVerification(normalizedEmail);
 
     return res.status(201).json({
       success: true,
@@ -210,8 +220,9 @@ async function register(req, res) {
 async function verifyOTP(req, res) {
   try {
     const { email, otp } = req.body;
+    const normalizedEmail = normalizeEmail(email);
 
-    if (!email || !otp) {
+    if (!normalizedEmail || !otp) {
       return res.status(400).json({
         success: false,
         message: "email and otp are required",
@@ -219,7 +230,7 @@ async function verifyOTP(req, res) {
     }
 
     const verification = await prisma.emailVerification.findUnique({
-      where: { email },
+      where: { email: normalizedEmail },
     });
 
     if (!verification) {
@@ -244,11 +255,11 @@ async function verifyOTP(req, res) {
     }
 
     const updatedUser = await prisma.user.update({
-      where: { email },
+      where: { email: normalizedEmail },
       data: { invalid: false },
     });
 
-    await prisma.emailVerification.delete({ where: { email } });
+    await prisma.emailVerification.delete({ where: { email: normalizedEmail } });
 
     const role = updatedUser.role || null;
     const token = createToken(updatedUser, role);
@@ -276,15 +287,16 @@ async function verifyOTP(req, res) {
 async function resendOTP(req, res) {
   try {
     const { email } = req.body;
+    const normalizedEmail = normalizeEmail(email);
 
-    if (!email) {
+    if (!normalizedEmail) {
       return res.status(400).json({
         success: false,
         message: "email is required",
       });
     }
 
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -299,7 +311,7 @@ async function resendOTP(req, res) {
       });
     }
 
-    await createPendingVerification(email);
+    await createPendingVerification(normalizedEmail);
 
     return res.json({
       success: true,
