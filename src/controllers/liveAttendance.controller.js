@@ -1,7 +1,7 @@
 const crypto = require("crypto");
 const prisma = require("../utils/prisma");
 
-const QR_TTL_MS = 10000;
+const QR_TTL_MS = 20000;
 
 function generateSecret() {
   return crypto.randomBytes(4).toString("hex").toUpperCase();
