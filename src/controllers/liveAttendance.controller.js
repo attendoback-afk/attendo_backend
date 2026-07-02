@@ -107,6 +107,7 @@ async function startSession(req, res) {
       },
     });
   } catch (err) {
+    console.error("[live/start]", err);
     res.status(500).json({ success: false, message: "Failed to start session" });
   }
 }
@@ -134,6 +135,7 @@ async function getCurrentQr(req, res) {
       },
     });
   } catch (err) {
+    console.error("[live/qr]", err);
     res.status(500).json({ success: false, message: "Failed to fetch QR token" });
   }
 }
@@ -207,6 +209,7 @@ async function joinSession(req, res) {
       data: { markedAt: record.createdAt },
     });
   } catch (err) {
+    console.error("[live/join]", err);
     res.status(500).json({ success: false, message: "Failed to join session" });
   }
 }
@@ -236,6 +239,7 @@ async function closeSession(req, res) {
 
     res.json({ success: true, message: "Session closed", data: closed });
   } catch (err) {
+    console.error("[live/close]", err);
     res.status(500).json({ success: false, message: "Failed to close session" });
   }
 }
@@ -275,6 +279,7 @@ async function getSessionRecords(req, res) {
       },
     });
   } catch (err) {
+    console.error("[live/records]", err);
     res.status(500).json({ success: false, message: "Failed to fetch records" });
   }
 }
@@ -294,6 +299,7 @@ async function mySessions(req, res) {
 
     res.json({ success: true, data: sessions });
   } catch (err) {
+    console.error("[live/my-sessions]", err);
     res.status(500).json({ success: false, message: "Failed to fetch sessions" });
   }
 }

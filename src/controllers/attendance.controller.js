@@ -97,6 +97,7 @@ async function getAll(req, res) {
 
     res.json({ success: true, data: records });
   } catch (err) {
+    console.error("[attendance/getAll]", err);
     res.status(500).json({ success: false, message: "Failed to fetch attendance" });
   }
 }
@@ -152,6 +153,7 @@ async function markOne(req, res) {
 
     res.status(201).json({ success: true, data: record });
   } catch (err) {
+    console.error("[attendance/markOne]", err);
     res.status(500).json({ success: false, message: "Failed to mark attendance" });
   }
 }
@@ -216,6 +218,7 @@ async function markBulk(req, res) {
       data: results,
     });
   } catch (err) {
+    console.error("[attendance/markBulk]", err);
     res.status(500).json({ success: false, message: "Failed to bulk mark attendance" });
   }
 }
@@ -230,6 +233,7 @@ async function update(req, res) {
     });
     res.json({ success: true, data: record });
   } catch (err) {
+    console.error("[attendance/update]", err);
     res.status(500).json({ success: false, message: "Failed to update attendance" });
   }
 }
@@ -240,6 +244,7 @@ async function remove(req, res) {
     await prisma.attendance.delete({ where: { id: Number(req.params.id) } });
     res.json({ success: true, message: "Attendance record deleted" });
   } catch (err) {
+    console.error("[attendance/remove]", err);
     res.status(500).json({ success: false, message: "Failed to delete attendance" });
   }
 }
@@ -294,6 +299,7 @@ async function classReport(req, res) {
 
     res.json({ success: true, data: summary });
   } catch (err) {
+    console.error("[attendance/classReport]", err);
     res.status(500).json({ success: false, message: "Failed to generate report" });
   }
 }
