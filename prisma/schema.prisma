@@ -108,6 +108,7 @@ model Session {
   module Module @relation(fields: [moduleId], references: [id])
   room   Room   @relation(fields: [roomId], references: [id])
 
+  attendanceSessions AttendanceSession[]
   attendances Attendance[]
 }
 
@@ -162,13 +163,16 @@ model Attendance {
   id        Int      @id @default(autoincrement())
   studentId Int
   sessionId Int
+  attendanceSessionId String
   markedBy  Int
   date      DateTime
   status    String
+  source    String   @default("MANUAL")
   createdAt DateTime @default(now())
 
   student Student     @relation(fields: [studentId], references: [userId], onDelete: Cascade)
   session Session     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  attendanceSession AttendanceSession @relation(fields: [attendanceSessionId], references: [id], onDelete: Cascade)
   marker  StaffMember @relation(fields: [markedBy], references: [userId])
 
   @@unique([studentId, sessionId, date])
@@ -176,16 +180,22 @@ model Attendance {
 
 model AttendanceSession {
   id        String    @id @default(uuid())
+  sessionId Int
   staffId   Int
   secret    String
   status    String    @default("ACTIVE")
+  qrToken   String?   @unique
+  qrIssuedAt DateTime?
+  qrExpiresAt DateTime?
   startTime DateTime  @default(now())
   endTime   DateTime?
   createdAt DateTime  @default(now())
 
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   staff StaffMember @relation(fields: [staffId], references: [userId])
 
   markedAttendances AttendanceRecord[]
+  attendances Attendance[]
 }
 
 model AttendanceRecord {

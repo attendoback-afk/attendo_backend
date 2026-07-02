@@ -11,7 +11,17 @@ router.use(authenticate);
  *     tags:
  *       - Live Attendance
  *     summary: Start a live attendance session
- *     description: Creates an active QR-based attendance session for the authenticated staff member. The controller does not consume a request body.
+ *     description: Creates an active QR-based attendance session for the authenticated staff member.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [sessionId]
+ *             properties:
+ *               sessionId:
+ *                 type: integer
  *     security:
  *       - BearerAuth: []
  *     responses:
@@ -32,6 +42,34 @@ router.post(
   "/start",
   authorize("PROFESSOR", "ASSISTANT", "MANAGER"),
   ctrl.startSession,
+);
+
+/**
+ * @swagger
+ * /live/{sessionId}/qr:
+ *   get:
+ *     tags:
+ *       - Live Attendance
+ *     summary: Get the current rotating QR token
+ *     description: Returns the active 5-second QR token for the live attendance session.
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - name: sessionId
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Current QR token
+ *       404:
+ *         description: Active session not found
+ */
+router.get(
+  "/:sessionId/qr",
+  authorize("PROFESSOR", "ASSISTANT", "MANAGER"),
+  ctrl.getCurrentQr,
 );
 
 /**
@@ -130,7 +168,7 @@ router.get(
  *     tags:
  *       - Live Attendance
  *     summary: Join an active live attendance session
- *     description: Students submit the active QR secret. The backend validates the active session and records attendance once per student per session.
+ *     description: Students submit the current QR token. The backend validates the active session and records attendance once per student per session.
  *     security:
  *       - BearerAuth: []
  *     requestBody:
@@ -138,7 +176,12 @@ router.get(
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/LiveJoinRequest'
+ *             type: object
+ *             required: [token]
+ *             properties:
+ *               token:
+ *                 type: string
+ *                 description: Current rotating QR token
  *     responses:
  *       200:
  *         description: Join confirmation with attendance timestamp

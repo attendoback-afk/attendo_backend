@@ -128,16 +128,16 @@ app.listen(PORT, "0.0.0.0", () => {
       checkedAt: new Date().toISOString(),
       healthy: false,
       message:
-        err?.code === "ETIMEDOUT"
+        err && err.code === "ETIMEDOUT"
           ? "Connection timeout while checking email provider"
-          : err?.message || "Email provider verification failed",
+          : (err && err.message) || "Email provider verification failed",
       details: {
-        code: err?.code,
-        response: err?.response,
-        responseCode: err?.responseCode,
+        code: err && err.code,
+        response: err && err.response,
+        responseCode: err && err.responseCode,
       },
     };
-    console.error("[Email Health] Email provider verification failed:", err?.message || err);
+    console.error("[Email Health] Email provider verification failed:", (err && err.message) || err);
   }
 })();
 
@@ -212,19 +212,18 @@ const options = {
         },
         LiveStartRequest: {
           type: "object",
+          required: ["sessionId"],
           properties: {
-            sessionId: { type: "string", format: "uuid" },
-            secret: { type: "string" },
-            startTime: { type: "string", format: "date-time" },
+            sessionId: { type: "integer", example: 1 },
           },
         },
         LiveJoinRequest: {
           type: "object",
-          required: ["secret"],
+          required: ["token"],
           properties: {
-            secret: {
+            token: {
               type: "string",
-              description: "Active QR secret shown on screen",
+              description: "Current rotating QR token",
             },
           },
         },
@@ -237,7 +236,10 @@ const options = {
               type: "object",
               properties: {
                 sessionId: { type: "string", format: "uuid" },
+                academicSessionId: { type: "integer", example: 1 },
                 secret: { type: "string", example: "A3F2" },
+                qrToken: { type: "string", example: "01a2b3c4:1719930000000" },
+                qrExpiresAt: { type: "string", format: "date-time" },
                 startTime: { type: "string", format: "date-time" },
               },
             },
@@ -271,6 +273,7 @@ const options = {
                   properties: {
                     id: { type: "string", format: "uuid" },
                     status: { type: "string", example: "ACTIVE" },
+                    academicSessionId: { type: "integer", example: 1 },
                     startTime: { type: "string", format: "date-time" },
                     endTime: {
                       type: "string",
@@ -289,6 +292,7 @@ const options = {
                       studentId: { type: "integer" },
                       attendanceSessionId: { type: "string", format: "uuid" },
                       markedAt: { type: "string", format: "date-time" },
+                      source: { type: "string", example: "LIVE_QR" },
                     },
                   },
                 },
@@ -304,16 +308,18 @@ const options = {
               type: "array",
               items: {
                 type: "object",
-                properties: {
-                  id: { type: "string", format: "uuid" },
-                  staffId: { type: "integer" },
-                  secret: { type: "string" },
-                  status: { type: "string", example: "ACTIVE" },
-                  startTime: { type: "string", format: "date-time" },
-                  endTime: {
-                    type: "string",
-                    format: "date-time",
-                    nullable: true,
+                  properties: {
+                    id: { type: "string", format: "uuid" },
+                    staffId: { type: "integer" },
+                    sessionId: { type: "integer", example: 1 },
+                    secret: { type: "string" },
+                    status: { type: "string", example: "ACTIVE" },
+                    qrToken: { type: "string", nullable: true },
+                    startTime: { type: "string", format: "date-time" },
+                    endTime: {
+                      type: "string",
+                      format: "date-time",
+                      nullable: true,
                   },
                   createdAt: { type: "string", format: "date-time" },
                   _count: {
