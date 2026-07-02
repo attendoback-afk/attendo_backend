@@ -340,13 +340,49 @@ async function mySessions(req, res) {
         .json({ success: false, message: "Invalid user id" });
     }
 
-    const sessions = await prisma.attendanceSession.findMany({
-      where: { staffId },
-      include: {
-        _count: { select: { markedAttendances: true } },
-      },
-      orderBy: { createdAt: "desc" },
-    });
+    let sessions;
+
+    try {
+      sessions = await prisma.attendanceSession.findMany({
+        where: { staffId },
+        include: {
+          _count: { select: { markedAttendances: true } },
+        },
+        orderBy: { createdAt: "desc" },
+      });
+    } catch (innerErr) {
+      // Handle cases where the DB contains corrupted rows (e.g. sessionId IS NULL)
+      const msg = String(innerErr?.message || "");
+      console.warn("[live/my-sessions] Prisma findMany failed, falling back to raw query:", msg);
+
+      // Fallback: use a raw query that excludes rows with NULL sessionId to avoid
+      // Prisma model conversion errors when the DB contains invalid data.
+      // Note: Uses parameter binding to avoid injection.
+      const raw = await prisma.$queryRaw`
+        SELECT s.*, (
+          SELECT COUNT(*) FROM "AttendanceRecord" ar WHERE ar."attendanceSessionId" = s.id
+        ) AS "markedAttendancesCount"
+        FROM "AttendanceSession" s
+        WHERE s."staffId" = ${staffId} AND s."sessionId" IS NOT NULL
+        ORDER BY s."createdAt" DESC
+      `;
+
+      // Map raw rows to an object shape similar to the original response.
+      sessions = raw.map((r) => ({
+        id: r.id,
+        sessionId: r.sessionId,
+        staffId: r.staffId,
+        secret: r.secret,
+        status: r.status,
+        qrToken: r.qrToken,
+        qrIssuedAt: r.qrIssuedAt,
+        qrExpiresAt: r.qrExpiresAt,
+        startTime: r.startTime,
+        endTime: r.endTime,
+        createdAt: r.createdAt,
+        _count: { markedAttendances: Number(r.markedAttendancesCount || 0) },
+      }));
+    }
 
     res.json({ success: true, data: sessions });
   } catch (err) {
