@@ -79,7 +79,9 @@ async function startSession(req, res) {
     const { sessionId } = req.body;
 
     if (!Number.isInteger(Number(sessionId))) {
-      return res.status(400).json({ success: false, message: "sessionId is required" });
+      return res
+        .status(400)
+        .json({ success: false, message: "sessionId is required" });
     }
 
     const session = await prisma.session.findUnique({
@@ -88,7 +90,9 @@ async function startSession(req, res) {
     });
 
     if (!session) {
-      return res.status(404).json({ success: false, message: "Session not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Session not found" });
     }
 
     const attendanceSession = await getOrCreateLiveSession(session.id, staffId);
@@ -108,7 +112,9 @@ async function startSession(req, res) {
     });
   } catch (err) {
     console.error("[live/start]", err);
-    res.status(500).json({ success: false, message: "Failed to start session" });
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to start session" });
   }
 }
 
@@ -117,10 +123,15 @@ async function getCurrentQr(req, res) {
   try {
     const staffId = req.user.userId;
     const sessionId = Number(req.params.sessionId);
-    const attendanceSession = await getActiveAttendanceSession(sessionId, staffId);
+    const attendanceSession = await getActiveAttendanceSession(
+      sessionId,
+      staffId,
+    );
 
     if (!attendanceSession) {
-      return res.status(404).json({ success: false, message: "Active session not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Active session not found" });
     }
 
     const current = await ensureCurrentToken(attendanceSession);
@@ -136,7 +147,9 @@ async function getCurrentQr(req, res) {
     });
   } catch (err) {
     console.error("[live/qr]", err);
-    res.status(500).json({ success: false, message: "Failed to fetch QR token" });
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to fetch QR token" });
   }
 }
 
@@ -152,12 +165,16 @@ async function joinSession(req, res) {
       select: { userId: true, classId: true },
     });
     if (!student) {
-      return res.status(403).json({ success: false, message: "Only students can join sessions" });
+      return res
+        .status(403)
+        .json({ success: false, message: "Only students can join sessions" });
     }
 
     const parsed = parseToken(rawToken);
     if (!parsed) {
-      return res.status(400).json({ success: false, message: "Invalid QR token" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid QR token" });
     }
 
     const attendanceSession = await prisma.attendanceSession.findUnique({
@@ -166,19 +183,33 @@ async function joinSession(req, res) {
     });
 
     if (!attendanceSession || attendanceSession.status !== "ACTIVE") {
-      return res.status(404).json({ success: false, message: "Invalid or expired code" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Invalid or expired code" });
     }
 
     if (!attendanceSession.qrToken || attendanceSession.qrToken !== rawToken) {
-      return res.status(400).json({ success: false, message: "QR token is not valid anymore" });
+      return res
+        .status(400)
+        .json({ success: false, message: "QR token is not valid anymore" });
     }
 
-    if (!attendanceSession.qrExpiresAt || attendanceSession.qrExpiresAt.getTime() < Date.now()) {
-      return res.status(400).json({ success: false, message: "QR token expired" });
+    if (
+      !attendanceSession.qrExpiresAt ||
+      attendanceSession.qrExpiresAt.getTime() < Date.now()
+    ) {
+      return res
+        .status(400)
+        .json({ success: false, message: "QR token expired" });
     }
 
     if (attendanceSession.session.classId !== student.classId) {
-      return res.status(403).json({ success: false, message: "Student does not belong to this class" });
+      return res
+        .status(403)
+        .json({
+          success: false,
+          message: "Student does not belong to this class",
+        });
     }
 
     const record = await prisma.attendance.upsert({
@@ -224,12 +255,19 @@ async function closeSession(req, res) {
       where: { id: sessionId },
     });
 
-    if (!attendanceSession) return res.status(404).json({ success: false, message: "Session not found" });
+    if (!attendanceSession)
+      return res
+        .status(404)
+        .json({ success: false, message: "Session not found" });
     if (attendanceSession.staffId !== staffId) {
-      return res.status(403).json({ success: false, message: "Not your session" });
+      return res
+        .status(403)
+        .json({ success: false, message: "Not your session" });
     }
     if (attendanceSession.status === "CLOSED") {
-      return res.status(400).json({ success: false, message: "Session already closed" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Session already closed" });
     }
 
     const closed = await prisma.attendanceSession.update({
@@ -240,7 +278,9 @@ async function closeSession(req, res) {
     res.json({ success: true, message: "Session closed", data: closed });
   } catch (err) {
     console.error("[live/close]", err);
-    res.status(500).json({ success: false, message: "Failed to close session" });
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to close session" });
   }
 }
 
@@ -263,7 +303,10 @@ async function getSessionRecords(req, res) {
       },
     });
 
-    if (!session) return res.status(404).json({ success: false, message: "Session not found" });
+    if (!session)
+      return res
+        .status(404)
+        .json({ success: false, message: "Session not found" });
 
     res.json({
       success: true,
@@ -280,14 +323,22 @@ async function getSessionRecords(req, res) {
     });
   } catch (err) {
     console.error("[live/records]", err);
-    res.status(500).json({ success: false, message: "Failed to fetch records" });
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to fetch records" });
   }
 }
 
 // GET /api/live/my-sessions
 async function mySessions(req, res) {
   try {
-    const staffId = req.user.userId;
+    const staffId = Number(req.user.userId);
+
+    if (!Number.isInteger(staffId)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid user id" });
+    }
 
     const sessions = await prisma.attendanceSession.findMany({
       where: { staffId },
@@ -300,8 +351,17 @@ async function mySessions(req, res) {
     res.json({ success: true, data: sessions });
   } catch (err) {
     console.error("[live/my-sessions]", err);
-    res.status(500).json({ success: false, message: "Failed to fetch sessions" });
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to fetch sessions" });
   }
 }
 
-module.exports = { startSession, getCurrentQr, joinSession, closeSession, getSessionRecords, mySessions };
+module.exports = {
+  startSession,
+  getCurrentQr,
+  joinSession,
+  closeSession,
+  getSessionRecords,
+  mySessions,
+};
