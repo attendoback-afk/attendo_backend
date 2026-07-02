@@ -204,12 +204,10 @@ async function joinSession(req, res) {
     }
 
     if (attendanceSession.session.classId !== student.classId) {
-      return res
-        .status(403)
-        .json({
-          success: false,
-          message: "Student does not belong to this class",
-        });
+      return res.status(403).json({
+        success: false,
+        message: "Student does not belong to this class",
+      });
     }
 
     const record = await prisma.attendance.upsert({
@@ -353,7 +351,10 @@ async function mySessions(req, res) {
     } catch (innerErr) {
       // Handle cases where the DB contains corrupted rows (e.g. sessionId IS NULL)
       const msg = String(innerErr?.message || "");
-      console.warn("[live/my-sessions] Prisma findMany failed, falling back to raw query:", msg);
+      console.warn(
+        "[live/my-sessions] Prisma findMany failed, falling back to raw query:",
+        msg,
+      );
 
       // Fallback: use a raw query that excludes rows with NULL sessionId to avoid
       // Prisma model conversion errors when the DB contains invalid data.
